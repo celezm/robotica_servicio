@@ -4,17 +4,28 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Práctica 1 de Robótica de Servicios.">
-  <title>Práctica 1 | Robótica de Servicios</title>
+  <title>Práctica 1 | Localized Vacuum Cleaner</title>
+
   <link rel="stylesheet" href="styles.css">
   <script src="script.js" defer></script>
 </head>
+
 <body>
+
   <header class="practice-header">
+
     <div class="nav">
       <a class="brand" href="index.html">Robótica de Servicios</a>
-      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav">
+
+      <button
+        class="menu-button"
+        type="button"
+        aria-expanded="false"
+        aria-controls="site-nav"
+      >
         <span>Menú</span>
       </button>
+
       <nav id="site-nav" aria-label="Navegación principal">
         <a href="index.html">Inicio</a>
         <a href="practica-1.html">Práctica 1</a>
@@ -28,49 +39,374 @@
 
     <section class="practice-hero">
       <p>Práctica 1</p>
-      <h1>Práctica 1</h1>
+
+      <h1>Localized Vacuum Cleaner</h1>
+
       <p class="subtitle">
-        Espacio reservado para completar la descripción de la práctica.
+        Planificación de cobertura para un robot aspirador localizado
+        en un entorno doméstico.
       </p>
     </section>
+
   </header>
 
+
   <main class="practice-main">
+
     <section class="practice-content">
+
+
       <article class="content-panel">
+
         <div class="meta">
-          <span>Práctica pendiente de completar</span>
+          <span>Práctica 1</span>
         </div>
+
         <h2>Objetivo</h2>
+
         <p>
-          Pendiente de completar.
+          El objetivo de esta práctica es, dado el mapa de una casa,
+          planificar la ruta por la que debe pasar un robot aspirador.
         </p>
+
+        <p>
+          Para planificar la ruta, el objetivo es ir enlazando espirales,
+          generadas mediante el algoritmo BSA, y determinando posibles
+          puntos de retorno hasta completar el mapa.
+        </p>
+
       </article>
 
+
       <article class="content-panel">
+
         <h2>Desarrollo</h2>
+
         <p>
-          Pendiente de completar.
+          El desarrollo de esta práctica se ha dividido en los siguientes
+          ficheros de código:
         </p>
-        <pre class="code-block"><code></code></pre>
+
+        <ul>
+          <li><code>main.py</code></li>
+          <li><code>register.py</code></li>
+          <li><code>map_processing.py</code></li>
+        </ul>
+
+        <h3>Registro entre el mapa y Gazebo</h3>
+
+        <p>
+          En primer lugar, se implementa un registro del mapa. Es decir,
+          se obtiene la correspondencia entre las posiciones del mapa,
+          representadas mediante píxeles, y las posiciones del mundo de
+          Gazebo, representadas mediante coordenadas de tipo float.
+        </p>
+
+        <p>
+          Para ello, al inicio del desarrollo de la práctica, obtuve
+          10 puntos del mapa y busqué la correspondencia de esas posiciones
+          en el mundo de Gazebo.
+        </p>
+
+        <p>
+          Sin embargo, durante las pruebas del código me di cuenta de que,
+          debido a la forma en la que se habían obtenido estos puntos,
+          el robot acumulaba bastante error y se chocaba con distintas partes
+          de la casa, pese a aplicar operaciones de erosión y dilatación
+          sobre la imagen.
+        </p>
+
+        <p>
+          Para tratar de solucionarlo, he ido modificando estos puntos
+          para que sean más fieles a la posición real y he incrementado
+          el número de puntos hasta 14, con el objetivo de minimizar
+          el error de posición.
+        </p>
+
+
+        <figure class="practice-figure">
+
+          <img
+            src="docs/p1/map_points.png"
+            alt="Puntos utilizados para realizar el registro entre el mapa y Gazebo"
+          >
+
+          <figcaption>
+            Puntos utilizados para establecer la correspondencia entre
+            el mapa y las coordenadas de Gazebo.
+          </figcaption>
+
+        </figure>
+
+
+        <h3>Procesamiento del mapa</h3>
+
+        <p>
+          Una vez obtenida esta correspondencia, se procesa el mapa
+          dividiendo la imagen en celdas.
+        </p>
+
+        <p>
+          Pese a que el enunciado determina que el tamaño estimado
+          del robot es de 35x35 píxeles, he utilizado un tamaño de celda
+          menor, de 22x22 píxeles, para favorecer la correspondencia
+          con el tamaño de la imagen, puesto que con el tamaño anterior
+          las celdas no encajaban correctamente con el mapa.
+        </p>
+
+        <p>
+          Para el procesamiento del mapa se ha seguido el siguiente pipeline:
+        </p>
+
+        <ol>
+
+          <li>
+            <strong>Erosión de la imagen.</strong>
+
+            Tras distintas pruebas, cambiando el tipo de kernel y el número
+            de iteraciones, se ha aplicado una erosión con un kernel en forma
+            de elipse y un tamaño de 30x30 píxeles.
+
+            Se utiliza una sola iteración, ya que este kernel produce una
+            erosión suficientemente agresiva.
+          </li>
+
+          <li>
+            <strong>División de la imagen en celdas.</strong>
+
+            La imagen se divide utilizando celdas de tamaño 22x22 píxeles.
+          </li>
+
+          <li>
+            <strong>Clasificación de las celdas.</strong>
+
+            Las celdas se clasifican en:
+
+            <ul>
+              <li>
+                <code>OCCUPIED</code>: celdas ocupadas o situadas fuera
+                de la zona navegable del mapa.
+              </li>
+
+              <li>
+                <code>FREE</code>: celdas por las que puede desplazarse
+                el robot.
+              </li>
+            </ul>
+          </li>
+
+        </ol>
+
+        <p>
+          Este procesamiento se ha implementado mediante distintas funciones
+          en el fichero <code>map_processing.py</code>.
+        </p>
+
+
+        <h3>Planificación de la ruta</h3>
+
+        <p>
+          Una vez obtenido el mapa procesado, comienza la planificación
+          de la ruta.
+        </p>
+
+        <p>
+          Para ello se sigue el siguiente pipeline:
+        </p>
+
+        <ol>
+
+          <li>
+            Se obtiene la posición inicial del robot y se determina
+            una orientación inicial para comenzar la ruta.
+          </li>
+
+          <li>
+            Se genera la primera espiral utilizando el algoritmo BSA.
+
+            El funcionamiento utilizado se basa en los siguientes pasos:
+
+            <ol type="a">
+
+              <li>
+                Se determina si la celda siguiente, en la dirección
+                actual del movimiento, está libre.
+
+                Si está libre, se continúa avanzando en esa dirección.
+              </li>
+
+              <li>
+                Si la celda situada delante no está libre, se comprueban
+                las distintas direcciones siguiendo un orden de prioridad.
+
+                Se selecciona una celda libre y se continúa el recorrido
+                desde ella.
+              </li>
+
+              <li>
+                Si no existe ninguna celda contigua libre, la posición
+                actual se declara como punto crítico.
+
+                Esto determina el final de la espiral actual.
+              </li>
+
+              <li>
+                Durante el movimiento del robot, las celdas libres
+                situadas alrededor del recorrido se marcan como posibles
+                puntos de retorno.
+              </li>
+
+              <li>
+                Cuando se alcanza un punto crítico, se busca un punto
+                de retorno mediante un algoritmo BFS.
+              </li>
+
+            </ol>
+          </li>
+
+          <li>
+            Una vez alcanzado el siguiente punto de retorno, se genera
+            una nueva espiral.
+          </li>
+
+          <li>
+            El proceso se repite hasta comprobar que el robot ha visitado
+            las celdas navegables del mapa.
+          </li>
+
+        </ol>
+
+
+        <h3>Navegación del robot</h3>
+
+        <p>
+          En este punto del programa ya se dispone de la ruta completa
+          del robot y comienza la fase de navegación.
+        </p>
+
+        <p>
+          Para realizar el movimiento se ha implementado un controlador
+          proporcional tanto para la velocidad lineal como para la velocidad
+          angular.
+        </p>
+
+        <p>
+          Al robot se le comanda desplazarse hacia el centro de cada celda,
+          utilizando aproximadamente un error de distancia de 0.15.
+        </p>
+
+        <p>
+          Además, la velocidad lineal se modifica en función de la distancia
+          restante hasta el centro de la siguiente celda, reduciéndola cuando
+          el robot se encuentra cerca del objetivo para evitar que se pase
+          del centro de la celda.
+        </p>
+
       </article>
 
+
       <article class="content-panel">
+
         <h2>Resultados y conclusiones</h2>
+
         <p>
-          Pendiente de completar.
+          A continuación se adjunta un vídeo acelerado de la ejecución
+          completa del código:
         </p>
-        <div class="practice-nav">
-          <a class="button secondary" href="index.html#practicas">Volver al índice</a>
-          <a class="button" href="practica-2.html">Siguiente práctica</a>
+
+
+        <div class="video-container">
+
+          <video controls>
+            <source
+              src="docs/p1/demo_p1.mp4"
+              type="video/mp4"
+            >
+
+            Tu navegador no soporta la reproducción de vídeo.
+          </video>
+
         </div>
+
+
+        <p>
+          En esta ejecución se puede observar que obtenemos una cobertura
+          del mapa de alrededor del 65%.
+        </p>
+
+        <p>
+          Este resultado podría mejorarse afinando el procesamiento
+          del mapa, por ejemplo disminuyendo la erosión aplicada.
+        </p>
+
+        <p>
+          La erosión utilizada es relativamente agresiva porque durante
+          las pruebas fue necesario aumentar el margen de seguridad para
+          evitar que el robot se chocase con determinadas esquinas,
+          mesas y otros elementos del entorno.
+        </p>
+
+        <p>
+          Sin embargo, esto provoca que determinadas zonas que físicamente
+          podrían ser accesibles por el robot terminen siendo clasificadas
+          como zonas no navegables.
+        </p>
+
+        <p>
+          Otro posible punto de mejora está relacionado con la generación
+          de las espirales.
+        </p>
+
+        <p>
+          En algunos casos quedan pequeñas zonas libres sin recorrer,
+          lo que posteriormente obliga al robot a realizar desplazamientos
+          relativamente largos para cubrir únicamente unas pocas celdas.
+        </p>
+
+        <p>
+          Para mejorar este comportamiento, se podrían tener en cuenta
+          las celdas libres cercanas durante la generación de cada espiral,
+          tratando de evitar dejar pequeños huecos que posteriormente
+          requieran un nuevo punto de retorno.
+        </p>
+
+
+        <div class="practice-nav">
+
+          <a
+            class="button secondary"
+            href="index.html#practicas"
+          >
+            Volver al índice
+          </a>
+
+          <a
+            class="button"
+            href="practica-2.html"
+          >
+            Siguiente práctica
+          </a>
+
+        </div>
+
       </article>
+
     </section>
+
   </main>
 
+
   <footer>
-    <p>Robótica de Servicios · Diario de prácticas</p>
-    <p class="footer-small">© <span data-year></span></p>
+
+    <p>
+      Robótica de Servicios · Diario de prácticas
+    </p>
+
+    <p class="footer-small">
+      © <span data-year></span>
+    </p>
+
   </footer>
+
 </body>
 </html>
