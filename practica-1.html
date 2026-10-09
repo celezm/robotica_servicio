@@ -75,6 +75,20 @@
           puntos de retorno hasta completar el mapa.
         </p>
 
+        <p>
+          <a href="https://jderobot.github.io/RoboticsAcademy/exercises/MobileRobots/vacuum_cleaner_loc" target="_blank" rel="noreferrer">Enunciado del ejercicio</a>.
+        </p>
+
+        <p class="source-note"></p>
+
+        <div class="section-index" aria-label="Secciones de la práctica">
+          <a href="#registro">Registro</a>
+          <a href="#procesamiento">Mapa y rejilla</a>
+          <a href="#planificacion">Planificación</a>
+          <a href="#navegacion">Navegación</a>
+          <a href="#resultados">Resultados</a>
+        </div>
+
       </article>
 
 
@@ -83,17 +97,24 @@
         <h2>Desarrollo</h2>
 
         <p>
-          El desarrollo de esta práctica se ha dividido en los siguientes
-          ficheros de código:
+          Este es el pipeline que se ha seguido para esta práctica:
+        </p>
+
+        <figure class="practice-figure">
+          <img src="docs/p1/pipeline_codigo.svg" alt="Etapas de desarrollo: procesamiento del mapa, clasificación de celdas, planificación BSA y navegación proporcional">
+        </figure>
+
+        <p>
+          El desarrollo se ha dividido en los siguientes ficheros de código:
         </p>
 
         <ul>
-          <li><code>main.py</code></li>
-          <li><code>register.py</code></li>
-          <li><code>map_processing.py</code></li>
+          <li><code>main.py</code> Encargado del programa principal y la navegación del robot </li>
+          <li><code>register.py</code> Encargado de generar el registro del mapa y generar las correspondencias entre Píxeles, Coordenadas y Celdas</li>
+          <li><code>map_processing.py</code> Encargado de aplicar la erosión al mapa, generar el array de celdas y clasificarlas en libres y ocupadas.</li>
         </ul>
 
-        <h3>Registro entre el mapa y Gazebo</h3>
+        <h3 id="registro">Registro entre el mapa y Gazebo</h3>
 
         <p>
           En primer lugar, se implementa un registro del mapa. Es decir,
@@ -104,7 +125,7 @@
 
         <p>
           Para ello, al inicio del desarrollo de la práctica, obtuve
-          10 puntos del mapa y busqué la correspondencia de esas posiciones
+          8 puntos del mapa y busqué la correspondencia de esas posiciones
           en el mundo de Gazebo.
         </p>
 
@@ -112,46 +133,59 @@
           Sin embargo, durante las pruebas del código me di cuenta de que,
           debido a la forma en la que se habían obtenido estos puntos,
           el robot acumulaba bastante error y se chocaba con distintas partes
-          de la casa, pese a aplicar operaciones de erosión y dilatación
+          de la casa, pese a aplicar una operación de erosión
           sobre la imagen.
         </p>
 
         <p>
-          Para tratar de solucionarlo, he ido modificando estos puntos
-          para que sean más fieles a la posición real y he incrementado
-          el número de puntos hasta 14, con el objetivo de minimizar
-          el error de posición.
+          Para reducir ese error, revisé las correspondencias y amplié el conjunto
+          de 8 a 15 puntos distribuidos por el mapa. De este modo, se reduce el error o la desviación, que
+          pueda producir un punto mal escogido a las trasformadas, puesto que los puntos
+          han sido selecionados "manualmente". Obtieniendo los siguientes puntos:
         </p>
-
 
         <figure class="practice-figure">
 
           <img
             src="docs/p1/map_points.png"
-            alt="Puntos utilizados para realizar el registro entre el mapa y Gazebo"
+            alt="Mapa original con puntos de correspondencia para el registro con Gazebo"
           >
-
-          <figcaption>
-            Puntos utilizados para establecer la correspondencia entre
-            el mapa y las coordenadas de Gazebo.
-          </figcaption>
 
         </figure>
 
+        <p>
+          En <code>register.py</code>, las 15 parejas de píxeles del mapa y
+          coordenadas de Gazebo se usan para estimar la transformación afín y
+          calcular su inversa:
+        </p>
+        <pre class="code-block"><code>Tmap2gzb, _ = cv2.estimateAffine2D(map_pixels, gzb_coords)
+Tgzb2map = cv2.invertAffineTransform(Tmap2gzb)</code></pre>
 
-        <h3>Procesamiento del mapa</h3>
+        <p>Las correspondencias se obtienen multiplicando la matriz de transformada por el vector (x, y, z)</p>
+        <pre class="code-block"><code>
+map_point = Tgzb2map @ gzb_point
+gzb_point = Tmap2gzb @ map_point
+        </code></pre>
+
+        <p>El módulo ofrece cuatro conversiones:</p>
+        <ul>
+          <li><code>map2gzb</code>: píxel del mapa → coordenadas de Gazebo.</li>
+          <li><code>gzb2map</code>: coordenadas de Gazebo → píxel del mapa.</li>
+          <li><code>gzb2cell</code>: posición del robot en Gazebo → fila y columna de la rejilla.</li>
+          <li><code>cell2gzb</code>: fila y columna → coordenadas de Gazebo.</li>
+        </ul>
+
+        <h3 id="procesamiento">Procesamiento del mapa</h3>
 
         <p>
-          Una vez obtenida esta correspondencia, se procesa el mapa
+          Una vez obtenida la correspondencia entre Gazebo y el mapa, se procesa el mapa
           dividiendo la imagen en celdas.
         </p>
 
         <p>
-          Pese a que el enunciado determina que el tamaño estimado
-          del robot es de 35x35 píxeles, he utilizado un tamaño de celda
-          menor, de 22x22 píxeles, para favorecer la correspondencia
-          con el tamaño de la imagen, puesto que con el tamaño anterior
-          las celdas no encajaban correctamente con el mapa.
+          Para ello, he utilizado un tamaño de celda
+          de 22x22 píxeles, para favorecer la correspondencia
+          con el tamaño de la imagen del mapa.
         </p>
 
         <p>
@@ -184,6 +218,24 @@
 
             <ul>
               <li>
+                <code>OCCUPIED</code>: celdas ocupadas por obstáculos o situadas fuera
+                de la zona navegable del mapa. Se dejarán en color negro.
+              </li>
+
+              <li>
+                <code>FREE</code>: celdas por las que puede desplazarse
+                el robot. Se dejarán en blanco (antes de la planificación).
+              </li>
+            </ul>
+          </li>
+
+        </ol>
+
+        <div class="technical-note state-convention">
+          <strong>Convención de estados.</strong>
+          <p>Cada celda puede tener los siguientes estados:</p>
+          <ul>
+              <li>
                 <code>OCCUPIED</code>: celdas ocupadas o situadas fuera
                 de la zona navegable del mapa.
               </li>
@@ -192,28 +244,49 @@
                 <code>FREE</code>: celdas por las que puede desplazarse
                 el robot.
               </li>
-            </ul>
-          </li>
 
-        </ol>
+              <li>
+                <code>VISITED</code>: celdas por las que ha pasado ya el robot. Durante la planificación son amarillas y durante la navegación, cian.
+              </li>
+
+              <li>
+                <code>CRITICAL_POINT</code>: celdas rodeadas por obstáculos físicos (obstáculos) o virtuales (que el robot ya haya pasado por
+                las celdas adyacentes). Estos puntos determinan el fin de una espiral.
+              </li>
+
+              <li>
+                <code>POSSIBLE_RETURNS</code>: celdas adyacentes a la ruta del robot. Cuando el robot termina una espiral,
+                busca el punto de retorno más cercano para iniciar la siguiente espiral en él.
+              </li>
+          </ul>
+
+          <figure class="practice-figure">
+            <img src="docs/p1/estados_grid.svg" alt="Estados de las celdas; el amarillo indica VISITED durante planificación y FREE durante navegación">
+            <figcaption>Leyenda de los estados de cada celda.</figcaption>
+          </figure>
+        </div>
 
         <p>
-          Este procesamiento se ha implementado mediante distintas funciones
-          en el fichero <code>map_processing.py</code>.
+          Este procesamiento se ha implementado en el fichero <code>map_processing.py</code>.
         </p>
 
 
-        <h3>Planificación de la ruta</h3>
+        <h3 id="planificacion">Planificación de la ruta</h3>
 
         <p>
           Una vez obtenido el mapa procesado, comienza la planificación
-          de la ruta.
+          de la ruta. Para ello se sigue el siguiente pipeline:
         </p>
 
-        <p>
-          Para ello se sigue el siguiente pipeline:
+        <p class="technical-note">
+          <strong>Regla de movimiento.</strong>
+          La dirección actual se mantiene mientras la celda frontal sea libre.
+          Cuando queda bloqueada, se comprueban las direcciones globales en el
+          orden este, norte, oeste y sur. Si no hay ninguna celda libre
+          adyacente, la posición se marca como punto crítico.
         </p>
 
+        <p>En <code>spiral_step</code>, se conserva la dirección actual si sigue libre; solo al bloquearse se aplica la prioridad global:</p>
         <ol>
 
           <li>
@@ -232,8 +305,20 @@
                 Se determina si la celda siguiente, en la dirección
                 actual del movimiento, está libre.
 
-                Si está libre, se continúa avanzando en esa dirección.
+                Si está libre, se continúa avanzando en esa dirección. 
+
               </li>
+
+              <pre class="code-block"><code>
+available = []
+for direction in range(len(DIRECTIONS)):
+    neigh = get_neighbour(row, col, direction)
+    if is_unvisited(neigh):
+        available.append(direction)
+
+if current_dir in available:
+  return current_dir
+                </code></pre>
 
               <li>
                 Si la celda situada delante no está libre, se comprueban
@@ -243,6 +328,14 @@
                 desde ella.
               </li>
 
+              <pre class="code-block"><code>
+priorities = [EAST, NORTH, WEST, SOUTH]
+
+for direction in priorities:
+  if direction in available:
+      return direction
+              </code></pre>
+
               <li>
                 Si no existe ninguna celda contigua libre, la posición
                 actual se declara como punto crítico.
@@ -250,11 +343,26 @@
                 Esto determina el final de la espiral actual.
               </li>
 
+              <pre class="code-block"><code>
+if available.is_empty():
+  return None
+              </code></pre>
+
+              <figure class="practice-figure">
+                <img src="docs/p1/espiral_grid.svg" alt="Ejemplo de espiral BSA en cuadrícula con celdas libres, obstáculos y punto crítico">
+                <figcaption>Ejemplo de posible ruta generada por BSA</figcaption>
+              </figure>
+
               <li>
                 Durante el movimiento del robot, las celdas libres
                 situadas alrededor del recorrido se marcan como posibles
                 puntos de retorno.
               </li>
+
+              <figure class="practice-figure">
+                <img src="docs/p1/espiral_retorno.svg" alt="Espiral BSA con celdas posibles de retorno marcadas en azul oscuro">
+                <figcaption>Ejemplo de posible ruta generada por BSA e implementación de los puntos de retorno </figcaption>
+              </figure>
 
               <li>
                 Cuando se alcanza un punto crítico, se busca un punto
@@ -276,13 +384,13 @@
 
         </ol>
 
-
-        <h3>Navegación del robot</h3>
+        <h3 id="navegacion">Navegación del robot</h3>
 
         <p>
           En este punto del programa ya se dispone de la ruta completa
           del robot y comienza la fase de navegación.
         </p>
+
 
         <p>
           Para realizar el movimiento se ha implementado un controlador
@@ -292,22 +400,55 @@
 
         <p>
           Al robot se le comanda desplazarse hacia el centro de cada celda,
-          utilizando aproximadamente un error de distancia de 0.15.
+          con una tolerancia de distancia de 0.1 y una tolerancia angular de 0.06.
         </p>
 
         <p>
           Además, la velocidad lineal se modifica en función de la distancia
-          restante hasta el centro de la siguiente celda, reduciéndola cuando
-          el robot se encuentra cerca del objetivo para evitar que se pase
-          del centro de la celda.
+          restante hasta el centro. Se definen dos niveles de reducción: si el
+          error es menor o igual que <code>2 × d_tolerance</code> (0,2 m), la
+          velocidad queda limitada a 0,15 m/s; si es menor o igual que
+          <code>d_tolerance</code> (0,1 m), el límite baja a 0,09 m/s. Así se
+          busca que el robot se acerque al objetivo más despacio.
         </p>
+
+        <p class="technical-note">
+          <strong>Orden de las condiciones.</strong>
+          En <code>move2cell</code> se comprueba primero si
+          <code>distance_error &lt; d_tolerance</code> y, en ese caso, el robot
+          se detiene y retorna. Por ello, el límite de 0,09 m/s no llega a
+          aplicarse en una aproximación normal por debajo de 0,1 m: la parada
+          ocurre antes. El límite de 0,15 m/s sí actúa entre 0,1 y 0,2 m.
+        </p>
+
+        <p>
+          Parámetros y umbrales principales de <code>move2cell</code> (distancia
+          en metros y ángulos en radianes):
+        </p>
+        <pre class="code-block"><code>d_tolerance = 0.1
+a_tolerance = 0.06
+
+# Giro para corregir orientación: V = 0
+kp_w = 1.0                 # W limitada a ±0.35
+
+# Avance y corrección angular fina
+kp_vel = 0.9               # V limitada a 0.05–0.30
+kp = 0.25                  # W limitada a ±0.04
+# Si abs(distance_error) &lt;= d_tolerance: V máxima de 0.09
+# Si abs(distance_error) &lt;= 2 * d_tolerance: V máxima de 0.15
+# Si abs(angle2command) &lt; 0.02: W = 0</code></pre>
+
+        <figure class="practice-figure">
+          <img src="docs/p1/navegacion_pid.svg" alt="Celdas alcanzadas por el robot durante el seguimiento de la ruta">
+          <figcaption>Ejemplo de navegación</figcaption>
+        </figure>
 
       </article>
 
 
       <article class="content-panel">
 
-        <h2>Resultados y conclusiones</h2>
+        <h2 id="resultados">Resultados y conclusiones</h2>
 
         <p>
           A continuación se adjunta un vídeo acelerado de la ejecución
@@ -328,48 +469,59 @@
 
         </div>
 
+        <h3>Valoración del resultado</h3>
 
         <p>
-          En esta ejecución se puede observar que obtenemos una cobertura
-          del mapa de alrededor del 65%.
+          En la ejecución anterior se observa una cobertura aproximada del 75 %: el robot completa una parte
+          amplia del recorrido, aunque quedan ciertas zonas navegables sin cubrir.
         </p>
 
         <p>
-          Este resultado podría mejorarse afinando el procesamiento
-          del mapa, por ejemplo disminuyendo la erosión aplicada.
+          El registro ha sido de las partes más importantes de la práctica.
+          Incluí más puntos de correspondencia para evitar que el ajuste
+          pudiera "desviarse" en caso de que se hubiera tomado alguno de los puntos
+          con mayor error, puesto que los puntos se han tomado "a mano", moviendo el robot en Gazebo y
+          observando el pixel del mapa al que pudiera corresponder.
         </p>
 
         <p>
-          La erosión utilizada es relativamente agresiva porque durante
-          las pruebas fue necesario aumentar el margen de seguridad para
-          evitar que el robot se chocase con determinadas esquinas,
-          mesas y otros elementos del entorno.
+          Por otro lado a lo largo de la práctica, también he probado procesamientos diferentes del mapa:
+          con kernels rectangulares, elípticos, incrementando y disminuyendo el tamaño y las iteraciones.
+          O la dilatación de ciertas zonas (como la mesa al lado de la mesa del comedor), que durante las
+          pruebas, era la zona en la que más colisiones tenía el robot. Sin embargo, el procesamiento con el 
+          que mejores resultados he obtenido, ha sido erosionar el mapa completo con un kernel con forma de
+          elípse de 30x30 a una iteración.
         </p>
 
         <p>
-          Sin embargo, esto provoca que determinadas zonas que físicamente
-          podrían ser accesibles por el robot terminen siendo clasificadas
-          como zonas no navegables.
+          Estos ajustes respondían a los choques que observé durante las pruebas en
+          distintas partes del entorno, como esquinas y mesas. Fui revisando a
+          la vez el registro y la erosión para que la rejilla representara mejor
+          el espacio transitable y mantuviera un margen de seguridad. Además, utilicé el mapa corregido y también, conseguí
+          reducir choques en esa zona.
         </p>
 
         <p>
-          Otro posible punto de mejora está relacionado con la generación
-          de las espirales.
+          No obstante, este "margen" tiene su coste, la erosión del mapa descartar pasillos o
+          bordes de las habitaciones por las que el robot si podía pasar, reduciendo la posibilidad
+          de cubrir ciertas zonas del mapa. Además, algunas espirales dejan
+          pequeñas celdas libres sin visitar, que para alcanzarlas después da lugar a un desplazamiento largo
+          para cubrir una zona pequeña. 
         </p>
 
-        <p>
-          En algunos casos quedan pequeñas zonas libres sin recorrer,
-          lo que posteriormente obliga al robot a realizar desplazamientos
-          relativamente largos para cubrir únicamente unas pocas celdas.
-        </p>
+        <h3>Mejoras para una siguiente iteración</h3>
 
-        <p>
-          Para mejorar este comportamiento, se podrían tener en cuenta
-          las celdas libres cercanas durante la generación de cada espiral,
-          tratando de evitar dejar pequeños huecos que posteriormente
-          requieran un nuevo punto de retorno.
-        </p>
-
+        <ul>
+          <li>
+            Comparar y combinar tanto operaciones de erosión sobre el mapa, para tratar
+            de reducir ese "margen" y esas zonas por las que sí puede pasar el robot, pero no 
+            accede por el procesamiento del mapa.
+          </li>
+          <li>
+            Tener en cuenta las celdas libres próximas al generar cada espiral,
+            con el objetivo de reducir huecos pequeños y retornos largos.
+          </li>
+        </ul>
 
         <div class="practice-nav">
 
