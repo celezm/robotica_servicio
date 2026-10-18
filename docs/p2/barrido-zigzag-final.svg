@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1672 941" role="img" aria-labelledby="title desc">
+<title id="title">Barrido en zigzag con 28 waypoints</title>
+<desc id="desc">Catorce carriles verticales unidos en una trayectoria continua: baja por el carril derecho y continúa alternando entre carriles conectados por pasos horizontales cortos. El dron aparece en el inicio y la base, abajo a la izquierda, es aproximada.</desc>
+<defs>
+ <marker id="arrow" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0L8 4L0 8Z" fill="#e4312b"/></marker>
+ <style>
+ .route{fill:none;stroke:#e4312b;stroke-width:6;stroke-linecap:round;stroke-linejoin:round}
+ .arrowLine{stroke:#e4312b;stroke-width:2.5;stroke-linecap:round}
+ .wp{fill:#fff;stroke:#e4312b;stroke-width:3}
+ text{font-family:Arial,Helvetica,sans-serif;fill:#17243b}
+ </style>
+</defs>
+<image href="barrido-zigzag.png" width="1672" height="941"/>
+<!-- Limpia el trazado anterior y conserva el marco y el estilo de fondo. -->
+<rect x="153" y="80" width="1365" height="669" fill="#c6e6fa"/>
+<rect x="147" y="74" width="1377" height="681" fill="none" stroke="#17212d" stroke-width="6"/>
+<!-- Un solo trazo conectado: 14 pasadas verticales y 13 enlaces horizontales. -->
+<path class="route" d="M1470.0 108 L1470.0 720 L1374.6 720 L1374.6 108 L1279.2 108 L1279.2 720 L1183.8 720 L1183.8 108 L1088.5 108 L1088.5 720 L993.1 720 L993.1 108 L897.7 108 L897.7 720 L802.3 720 L802.3 108 L706.9 108 L706.9 720 L611.5 720 L611.5 108 L516.2 108 L516.2 720 L420.8 720 L420.8 108 L325.4 108 L325.4 720 L230.0 720 L230.0 108"/>
+<line x1="1470.0" y1="378" x2="1470.0" y2="423" class="arrowLine" marker-end="url(#arrow)"/><line x1="1430.3" y1="720" x2="1414.3" y2="720" class="arrowLine" marker-end="url(#arrow)"/><line x1="1374.6" y1="450" x2="1374.6" y2="405" class="arrowLine" marker-end="url(#arrow)"/><line x1="1334.9" y1="108" x2="1318.9" y2="108" class="arrowLine" marker-end="url(#arrow)"/><line x1="1279.2" y1="378" x2="1279.2" y2="423" class="arrowLine" marker-end="url(#arrow)"/><line x1="1239.5" y1="720" x2="1223.5" y2="720" class="arrowLine" marker-end="url(#arrow)"/><line x1="1183.8" y1="450" x2="1183.8" y2="405" class="arrowLine" marker-end="url(#arrow)"/><line x1="1144.2" y1="108" x2="1128.2" y2="108" class="arrowLine" marker-end="url(#arrow)"/><line x1="1088.5" y1="378" x2="1088.5" y2="423" class="arrowLine" marker-end="url(#arrow)"/><line x1="1048.8" y1="720" x2="1032.8" y2="720" class="arrowLine" marker-end="url(#arrow)"/><line x1="993.1" y1="450" x2="993.1" y2="405" class="arrowLine" marker-end="url(#arrow)"/><line x1="953.4" y1="108" x2="937.4" y2="108" class="arrowLine" marker-end="url(#arrow)"/><line x1="897.7" y1="378" x2="897.7" y2="423" class="arrowLine" marker-end="url(#arrow)"/><line x1="858.0" y1="720" x2="842.0" y2="720" class="arrowLine" marker-end="url(#arrow)"/><line x1="802.3" y1="450" x2="802.3" y2="405" class="arrowLine" marker-end="url(#arrow)"/><line x1="762.6" y1="108" x2="746.6" y2="108" class="arrowLine" marker-end="url(#arrow)"/><line x1="706.9" y1="378" x2="706.9" y2="423" class="arrowLine" marker-end="url(#arrow)"/><line x1="667.2" y1="720" x2="651.2" y2="720" class="arrowLine" marker-end="url(#arrow)"/><line x1="611.5" y1="450" x2="611.5" y2="405" class="arrowLine" marker-end="url(#arrow)"/><line x1="571.8" y1="108" x2="555.8" y2="108" class="arrowLine" marker-end="url(#arrow)"/><line x1="516.2" y1="378" x2="516.2" y2="423" class="arrowLine" marker-end="url(#arrow)"/><line x1="476.5" y1="720" x2="460.5" y2="720" class="arrowLine" marker-end="url(#arrow)"/><line x1="420.8" y1="450" x2="420.8" y2="405" class="arrowLine" marker-end="url(#arrow)"/><line x1="381.1" y1="108" x2="365.1" y2="108" class="arrowLine" marker-end="url(#arrow)"/><line x1="325.4" y1="378" x2="325.4" y2="423" class="arrowLine" marker-end="url(#arrow)"/><line x1="285.7" y1="720" x2="269.7" y2="720" class="arrowLine" marker-end="url(#arrow)"/><line x1="230.0" y1="450" x2="230.0" y2="405" class="arrowLine" marker-end="url(#arrow)"/>
+<circle cx="1470.0" cy="108" r="7.5" class="wp"/>
+<circle cx="1470.0" cy="720" r="7.5" class="wp"/>
+<circle cx="1374.6" cy="720" r="7.5" class="wp"/>
+<circle cx="1374.6" cy="108" r="7.5" class="wp"/>
+<circle cx="1279.2" cy="108" r="7.5" class="wp"/>
+<circle cx="1279.2" cy="720" r="7.5" class="wp"/>
+<circle cx="1183.8" cy="720" r="7.5" class="wp"/>
+<circle cx="1183.8" cy="108" r="7.5" class="wp"/>
+<circle cx="1088.5" cy="108" r="7.5" class="wp"/>
+<circle cx="1088.5" cy="720" r="7.5" class="wp"/>
+<circle cx="993.1" cy="720" r="7.5" class="wp"/>
+<circle cx="993.1" cy="108" r="7.5" class="wp"/>
+<circle cx="897.7" cy="108" r="7.5" class="wp"/>
+<circle cx="897.7" cy="720" r="7.5" class="wp"/>
+<circle cx="802.3" cy="720" r="7.5" class="wp"/>
+<circle cx="802.3" cy="108" r="7.5" class="wp"/>
+<circle cx="706.9" cy="108" r="7.5" class="wp"/>
+<circle cx="706.9" cy="720" r="7.5" class="wp"/>
+<circle cx="611.5" cy="720" r="7.5" class="wp"/>
+<circle cx="611.5" cy="108" r="7.5" class="wp"/>
+<circle cx="516.2" cy="108" r="7.5" class="wp"/>
+<circle cx="516.2" cy="720" r="7.5" class="wp"/>
+<circle cx="420.8" cy="720" r="7.5" class="wp"/>
+<circle cx="420.8" cy="108" r="7.5" class="wp"/>
+<circle cx="325.4" cy="108" r="7.5" class="wp"/>
+<circle cx="325.4" cy="720" r="7.5" class="wp"/>
+<circle cx="230.0" cy="720" r="7.5" class="wp"/>
+<circle cx="230.0" cy="108" r="7.5" class="wp"/>
+<!-- El dron inicia sobre el waypoint de la esquina superior derecha. -->
+<g transform="translate(1470 78)" stroke="#263746" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Brazos y cuatro protectores de hélice. -->
+  <path d="M-7 -5L-23 -17M7 -5L23 -17M-7 5L-23 17M7 5L23 17" fill="none" stroke-width="5"/>
+  <circle cx="-26" cy="-19" r="9" fill="#eef3f6" stroke-width="3"/>
+  <circle cx="26" cy="-19" r="9" fill="#eef3f6" stroke-width="3"/>
+  <circle cx="-26" cy="19" r="9" fill="#eef3f6" stroke-width="3"/>
+  <circle cx="26" cy="19" r="9" fill="#eef3f6" stroke-width="3"/>
+  <path d="M-32 -19H-20M20 -19H32M-32 19H-20M20 19H32" fill="none" stroke-width="2"/>
+  <!-- Fuselaje, cámara frontal y patas. -->
+  <path d="M-8 -10Q0 -15 8 -10L10 5L6 14H-6L-10 5Z" fill="#566b7b" stroke-width="3"/>
+  <circle cx="0" cy="5" r="3.5" fill="#f5a623" stroke-width="2"/>
+  <path d="M-7 12L-10 18M7 12L10 18M-14 19H14" fill="none" stroke-width="2.5"/>
+</g>
+<circle cx="836" cy="414" r="12" fill="#f59e0b" stroke="#17243b" stroke-width="3"/>
+<text x="858" y="422" font-size="22" stroke="#c6e6fa" stroke-width="7" paint-order="stroke">Referencia Supervivientes</text>
+<!-- Plataforma de aterrizaje y estación de control para representar la base. -->
+<rect x="32" y="808" width="156" height="126" fill="#fff"/>
+<ellipse cx="110" cy="908" rx="52" ry="14" fill="#d8ead5"/>
+<g stroke="#263746" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M78 867L110 838L142 867V897H78Z" fill="#9bc8df"/>
+  <path d="M70 868L110 832L150 868L143 874L110 845L77 874Z" fill="#587f9b"/>
+  <path d="M99 897V874Q110 860 121 874V897Z" fill="#405d73"/>
+  <path d="M84 871H96V883H84Z M124 871H136V883H124Z" fill="#e5f2f7"/>
+  <path d="M90 868L95 864M125 864L130 868" fill="none" stroke="#eef6eb" stroke-width="2.5"/>
+  <path d="M110 838V823M105 823H115M106 829Q110 824 114 829" fill="none"/>
+  <circle cx="133" cy="852" r="3.5" fill="#a9d7ef" stroke="none"/>
+</g>
+</svg>

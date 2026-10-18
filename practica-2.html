@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Práctica 2 de Robótica de Servicios.">
+  <meta name="description" content="Práctica 2 de Robótica de Servicios: búsqueda de supervivientes con un dron autónomo.">
   <title>Práctica 2 | Robótica de Servicios</title>
   <link rel="stylesheet" href="styles.css">
   <script src="script.js" defer></script>
@@ -28,38 +28,185 @@
 
     <section class="practice-hero">
       <p>Práctica 2</p>
-      <h1>Práctica 2</h1>
+      <h1>Rescue People</h1>
       <p class="subtitle">
-        Espacio reservado para completar la descripción de la práctica.
+        Búsqueda autónoma y localización de supervivientes mediante un dron y visión artificial.
       </p>
     </section>
   </header>
 
   <main class="practice-main">
     <section class="practice-content">
-      <article class="content-panel">
+      <article class="content-panel" id="objetivo">
         <div class="meta">
-          <span>Práctica pendiente de completar</span>
         </div>
         <h2>Objetivo</h2>
         <p>
-          Pendiente de completar.
+          El objetivo de esta práctica es desarrollar un sistema autónomo capaz de localizar supervivientes en el mar utilizando un dron equipado con una cámara ventral.
+          El dron debe desplazarse hasta la zona en la que se tiene el último contacto con el avión, realizar un barrido alrededor de esa zona, detectar las caras de las personas y estimar sus coordenadas geográficas
+          para facilitar su rescate.
+        </p>
+        <p>
+          <a href="https://jderobot.github.io/RoboticsAcademy/exercises/Drones/rescue_people" target="_blank" rel="noopener noreferrer">Enunciado del ejercicio Rescue People</a>
         </p>
       </article>
 
-      <article class="content-panel">
+      <article class="content-panel" id="desarrollo">
         <h2>Desarrollo</h2>
-        <p>
-          Pendiente de completar.
+        <p>La práctica se ha desarrollado mediante una máquina de estados, para separar las etapas del programa,
+          el estado determina qué accion debe realizar el drone en cada iteración:
         </p>
-        <pre class="code-block"><code></code></pre>
-      </article>
+          <div class="table-wrapper"><table><thead><tr><th>Estado</th><th>Comportamiento</th></tr></thead><tbody>
+            <tr><td><code>IDLE</code></td><td>Inicialización de la misión.</td></tr>
+            <tr><td><code>TAKE_OFF</code></td><td>Orden de despegue y espera hasta alcanzar la altura nominal.</td></tr>
+            <tr><td><code>GO_TO_SURVIVORS</code></td><td>Desplazamiento al waypoint de referencia facilitado en el ejercicio.</td></tr>
+            <tr><td><code>BARRIDO</code></td><td>Seguimiento de los waypoints y procesamiento de la cámara ventral.</td></tr>
+            <tr><td><code>RETURN</code></td><td>Regreso definitivo a la posición inicial.</td></tr>
+            <tr><td><code>DONE</code></td><td>Orden de aterrizaje y fin del programa.</td></tr>
+            <tr><td><code>BATTERY_LOW</code></td><td>Interrupción de la navegación para regresar a la base.</td></tr>
+            <tr><td><code>CHARGING</code></td><td>Aterrizaje y recarga simulada; posterior reanudación del barrido.</td></tr>
+          </tbody></table></div>
+          <p>La secuencia habitual es <code>IDLE → TAKE_OFF → GO_TO_SURVIVORS → BARRIDO → RETURN → DONE</code>. Cuando la batería se encuentra al 25% o menos, 
+            se pasa por los estados <code>BATTERY_LOW</code> (que lleva el drone a la base) y <code>CHARGING</code> (que carga el drone) antes de continuar desde el waypoint pendiente.</p>
+        <section id="navegacion">
+          <h3>1. Control del dron por posición</h3>
+          <h4>1.1. Sistemas de coordenadas</h4>
+          <p>La posición de referencia se proporciona en coordenadas geográficas/UTM, mientras que el dron recibe objetivos en el sistema local de Gazebo. Por eso se han creado funciones de conversión, entre ellas <code>utm2gzb()</code> para transformar la referencia de búsqueda y <code>gzb2gps()</code> para convertir las posiciones detectadas a latitud y longitud.</p>
+          <h4>1.2. Navegación entre objetivos</h4>
+          <p>La función <code>move2waypoint()</code> lee la posición actual del dron con <code>HAL.get_position()</code> y envía el objetivo mediante <code>HAL.set_cmd_pos(x, y, z, yaw)</code>. No se controla directamente la velocidad: se indica una pose objetivo y el controlador de la simulación se encarga del movimiento hacia ella.</p>
+          <p>El waypoint se considera alcanzado cuando tanto el error horizontal como el error vertical son inferiores a  0,75 m. La altura de vuelo es de  5 m.</p>
+          <pre class="code-block"><code>HAL.set_cmd_pos(x, y, z, yaw)
+arrived = math.hypot(x - pos[0], y - pos[1]) &lt;= d_tolerance and abs(z - pos[2]) &lt;= d_tolerance</code></pre>
+        </section>
+        <section id="barrido">
+          <h3>2. Planificación del barrido</h3>
+          <h4>2.1. Del waypoint de referencia a la zona de búsqueda</h4>
+          <p>El ejercicio proporciona un punto de referencia próximo a los supervivientes. En lugar de tratarlo como la posición exacta de una persona, se utiliza para generar un  rectángulo de búsqueda que cubra el área donde pueden aparecer.
+            El punto queda en el interior del rectángulo, aproximadamente en el centro.</p>
+          <p>Este rectángulo tiene una longitud de  30 m y un ancho de  25 m.</p>
+          <pre class="code-block"><code>SEARCH_WIDTH = 25.0
+SEARCH_HEIGHT = 30.0
+LANE_SPACING = 2.0
+BARRIDO_OFFSET = 20.0
 
-      <article class="content-panel">
+x_max = corner_x
+y_min = corner_y
+x_min = x_max - SEARCH_HEIGHT
+y_max = y_min + SEARCH_WIDTH</code></pre>
+          <h4>2.2. Recorrido en zigzag</h4>
+          <p>Para recorrer la zona se utiliza una trayectoria de en "zigzag". La función <code>generate_waypoints_barrido()</code> divide la anchura de la región en carriles y calcula dos waypoints por carril, situados en sus extremos longitudinales. En cada carril se invierte el sentido del recorrido para enlazar con el siguiente.</p>
+          <p>Con una separación de 2 m entre carriles se generan  14 carriles y 28 waypoints. La última separación es de 1 m para ajustarse a los 25 m. La distancia entre los dos extremos de cada carril es de 30 m.</p>
+          <figure>
+            <img src="docs/p2/barrido-zigzag-final.svg" alt="Barrido vertical continuo en zigzag de 28 waypoints, con flechas pequeñas, inicio arriba a la derecha, referencia centrada y base aproximada abajo a la izquierda." loading="lazy" style="max-width:100%;height:auto;">
+            <figcaption>Esquema del barrido generado por el código.</figcaption>
+          </figure>
+          <h4>2.3. Ejecución de la trayectoria</h4>
+          <p>El índice <code>waypoint_index</code> señala el siguiente waypoint objetivo. El programa solo incrementa el índice cuando <code>move2waypoint()</code> confirma su llegada. Así, el barrido se ejecuta de forma secuencial y puede reanudarse después de recargar la bateria sin perder los waypoints ya completados.</p>
+        </section>
+        <section id="deteccion">
+          <h3>3. Detección de personas mediante visión artificial</h3>
+          <h4>3.1. Captura y preprocesamiento</h4>
+          <p>Durante el estado <code>BARRIDO</code> se captura la imagen de la cámara ventral. La imagen se gira hasta 180° de acuerdo con la orientación elegida para su procesamiento. A continuación se convierte a escala de grises y se ecualiza el histograma,
+            lo que permite trabajar con el contraste de las caras antes de aplicar el clasificador.</p>
+          <pre class="code-block"><code>gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+gray = cv2.equalizeHist(gray)</code></pre>
+          <h4>3.2. Detector Haar Cascade y rotación de imágenes</h4>
+          <p>Se utiliza un detector frontal de caras  Haar Cascade de OpenCV. Como las personas flotan en distintas orientaciones, una única ejecución del clasificador sobre la imagen original puede no detectar todas las caras. Para solucionarlo se rota la imagen en intervalos de  30° y se ejecuta <code>detectMultiScale3()</code> sobre cada orientación.</p>
+          <p>El resultado de una rotación se expresa en coordenadas de la imagen girada. Por ello, el centro de cada rectángulo se transforma de vuelta a la imagen original mediante la inversa de la transformación afín. El detector aporta también una puntuación <code>weight</code>, que se utiliza para filtrar y ordenar las detecciones: no es un porcentaje de probabilidad.</p>
+          <pre class="code-block"><code>FACE_ANGLES = range(-180, 180, 30)
+FACE_SCALE_FACTOR = 1.05
+FACE_MIN_NEIGHBORS = 3
+FACE_MIN_SIZE = (15, 15)
+FACE_MIN_WEIGHT = 1.3</code></pre>
+          <h4>3.3. Filtro de píxeles de agua</h4>
+          <p>Durante las pruebas se observaron falsos positivos asociados al fondo marino. Para reducirlos, se examina cada región candidata en el espacio de color  HSV y se identifica qué proporción de sus píxeles se encuentra dentro del intervalo de azul definido en el programa. Si la proporción alcanza el  80 %, se descarta la región al considerar que es principalmente agua.</p>
+          <pre class="code-block"><code>FACE_BLUE_LOWER = (90, 40, 30)
+FACE_BLUE_UPPER = (140, 255, 255)
+FACE_MAX_BLUE_RATIO = 0.80
+
+hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+mask = cv2.inRange(hsv, FACE_BLUE_LOWER, FACE_BLUE_UPPER)</code></pre>
+          <h4>3.4. Descarte de duplicados en un fotograma</h4>
+          <p>Una misma persona puede detectarse varias veces al analizar las diferentes rotaciones. Las regiones candidatas se ordenan por <code>weight</code> y se comprueba la distancia entre sus centros; cuando dos detecciones están demasiado próximas en relación con el tamaño de sus rectángulos, se conserva únicamente la de mayor puntuación. El proceso de detección se ejecuta cada tres iteraciones del bucle, evitando analizar todas las imágenes capturadas.</p>
+        </section>
+        <section id="geolocalizacion">
+          <h3>4. Estimación de coordenadas y agrupación</h3>
+          <h4>4.1. De la detección en píxeles a la posición en Gazebo</h4>
+          <p>El rectángulo de una cara proporciona su posición en píxeles. Se calcula su centro y el desplazamiento con respecto al punto principal de la cámara. A partir de los parámetros intrínsecos obtenidos del modelo del dron (<code>fx = fy ≈ 282,80</code> píxeles, <code>cx = 160</code>, <code>cy = 120</code>) se estima el desplazamiento sobre el plano utilizando la altura de vuelo y la distancia focal. De este modo, la escala en metros por píxel depende de la altura, en vez de ser una constante fija.</p>
+          <pre class="code-block"><code>camera_height = drone_pos[2] - CAMERA_OFFSET_Z
+displacement_x = (center_y - CAMERA_CY) * camera_height / CAMERA_FY
+displacement_y = (center_x - CAMERA_CX) * camera_height / CAMERA_FX
+person_x = drone_pos[0] + displacement_x
+person_y = drone_pos[1] + displacement_y</code></pre>
+          <p>La posición estimada en Gazebo se convierte a coordenadas GPS con <code>gzb2gps()</code>. La fórmula utilizada es aproximada: presupone un plano de altura conocida y conserva la correspondencia de ejes implementada en el proyecto, sin compensar todavía de forma completa la inclinación y orientación instantáneas del dron.</p>
+          <h4>4.2. Filtrado de posiciones no válidas</h4>
+          <p>Antes de almacenar una observación se comprueba que sus coordenadas estimadas pertenezcan a la región de interés. Este filtro se añadió después de observar detecciones espurias cerca de la base de despegue en algunas ejecuciones.</p>
+          <pre class="code-block"><code>if not (18 &lt;= person_x &lt;= 49 and -44 &lt;= person_y &lt;= -28):
+    return</code></pre>
+          <p>Este filtro de aceptación es más reducido que la zona de vuelo del último barrido (30 × 25 m); por tanto, excluye deliberadamente observaciones fuera de esos límites aunque el dron las atraviese.</p>
+          <h4>4.3. Agrupación espacial y seguimiento durante el barrido</h4>
+          <p>Una persona puede generar varias detecciones en fotogramas sucesivos. Para no contabilizarlas como personas distintas, las observaciones se agrupan por proximidad GPS utilizando la distancia de Haversine. Se ordenan por <code>weight</code> y se asocian al grupo más cercano si la separación es inferior a 3,1 m. Cada grupo conserva como referencia la detección mejor puntuada.</p>
+          <p>La agrupación se ejecuta tanto durante el barrido como al finalizar la misión. En tiempo de ejecución se imprime el número de grupos provisionales encontrados hasta ese momento, sus coordenadas GPS y Gazebo y el número de observaciones de cada uno. Estos grupos pueden cambiar conforme se incorporan nuevas detecciones; no implican reconocimiento individual de identidad.</p>
+        </section>
+        <section id="bateria">
+          <h3>5. Gestión de batería y recuperación del recorrido</h3>
+          <p>Como ampliación se implementó un modelo de batería virtual, en cada iteración, disminuye un 0.003%.</p>
+          <p>Cuando el nivel llega al 25 % se ordena el regreso a la base mediante <code>BATTERY_LOW</code>. En <code>CHARGING</code> se solicita el aterrizaje, se espera una recarga simulada de cinco segundos y se restablece la batería al 100 %. Después se realiza un nuevo despegue y se continúa desde el <code>waypoint_index</code> pendiente.</p>
+          <p>La recarga es una simulación temporal, no una medida física de consumo.</p>
+        </section>
+      </article>
+      <article class="content-panel" id="resultados">
         <h2>Resultados y conclusiones</h2>
+        <section id="resultados-experimentales">
+          <h3>1. Resultados de localización</h3>
+          <p>Se adjunta un video de una de las ejecuciones del programa: </p>
+          <figure>
+            <video controls preload="metadata" style="width:100%;height:auto;display:block;" aria-label="Vídeo de la ejecución de Rescue People">
+              <source src="docs/p2/rescue-people.mp4" type="video/mp4">
+              Tu navegador no admite la reproducción de vídeo.
+            </video>
+            <figcaption>Si el visor no reproduce el vídeo, <a href="docs/p2/rescue-people.mp4"> rescue-people.mp4</a>.</figcaption>
+          </figure>
+          <p>En esta ejecición, el programa terminó con 6 personas detectadas. Al comparar las posiciones estimadas con las coordenadas
+            estimadas de las 6 personas en Gazebo, cada grupo puede asociarse por proximidad a un superviviente diferente.</p>
+          <figure>
+            <img src="docs/p2/resultados.png" alt="Consola de Robotics Academy con los seis grupos GPS registrados en la última ejecución" loading="lazy" style="max-width:100%;height:auto;">
+            <figcaption>Resultados de la ejecución utilizada para evaluar la precisión de las posiciones estimadas.</figcaption>
+          </figure>
+          <div class="table-wrapper results-table"><table><thead><tr><th>Grupo</th><th>Posición Gazebo (X, Y)</th><th>Posición GPS (latitud, longitud)</th></tr></thead><tbody>
+            <tr><td>1</td><td>(34,51; −35,66)</td><td>(40.28036589; -3.81721851)</td></tr>
+            <tr><td>2</td><td>(38,98; −34,65)</td><td>(40.28040610; -3.81720339)</td></tr>
+            <tr><td>3</td><td>(25,71; −35,08)</td><td>(40.28028677; -3.81722537)</td></tr>
+            <tr><td>4</td><td>(32,06; −38,18)</td><td>(40.28034388; -3.81718880)</td></tr>
+            <tr><td>5</td><td>(35,54; −31,39)</td><td>(40.28037519; -3.81726889)</td></tr>
+            <tr><td>6</td><td>(41,41; −39,82)</td><td>(40.28042795; -3.81716947)</td></tr>
+          </tbody></table></div>
+
+        </section>
+        <section id="conclusiones">
+        <h3>2. Conclusiones</h3>
+        <p> El programa desarrollado consigue realizar de forma autónoma un barrido rectangular de la zona de búsqueda,
+          tomando como referencia la posición estimada de los supervivientes proporcionada en el enunciado, que se sitúa
+          aproximadamente en el centro de la región explorada. A partir de este punto, se genera una trayectoria en zigzag
+          mediante waypoints que permite recorrer la zona, manteniendo la altura de vuelo constante.</p>
         <p>
-          Pendiente de completar.
+          Durante el recorrido, el dron consigue detectar y localizar a los seis supervivientes presentes en el escenario
+          mediante el procesamiento de las imágenes de su cámara ventral, combinando el detector Haar Cascade, la rotación de
+          imágenes y el filtrado de regiones correspondientes al agua permite detectar caras con diferentes orientaciones y
+          reducir los falsos positivos. Además, la agrupación de las observaciones evita contabilizar varias veces a la misma persona.
         </p>
+        <p>
+          Los resultados obtenidos muestran que el sistema es capaz de estimar las coordenadas de los seis supervivientes
+          tanto en Gazebo como en GPS. Además, la implementación de una máquina de estados permite gestionar las diferentes
+          fases de la misión, incluyendo el regreso a la base y la reanudación del barrido cuando se produce una interrupción
+          por batería baja.
+        </p>
+        <p>
+          Como posibles mejoras, se podría incorporar la orientación del dron y de la cámara al cálculo de las posiciones para
+          aumentar la precisión de las posiciones, también se podría mejorar el procesamiento de las imágenes y la detección de
+          caras, puesto que en algunos momentos, la detección se muestra con cierto delay en la imagen.
+        </p>
+      </section>
         <div class="practice-nav">
           <a class="button secondary" href="practica-1.html">Práctica anterior</a>
           <a class="button" href="practica-3.html">Siguiente práctica</a>

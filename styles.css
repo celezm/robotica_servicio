@@ -547,7 +547,7 @@ article h2,
 
 .practice-figure img {
   width: 100%;
-  max-width: 820px;
+  max-width: 560px;
   height: auto;
   display: block;
   margin: 0 auto;
@@ -559,7 +559,7 @@ article h2,
 
 .practice-figure img[src$="map_points.png"] {
   width: 100%;
-  max-width: 820px;
+  max-width: 600px;
   height: auto;
   aspect-ratio: auto;
   object-fit: contain;
@@ -601,6 +601,16 @@ article h2,
 
 .content-panel > figure img {
   aspect-ratio: auto;
+}
+
+.results-table {
+  display: flex;
+  justify-content: center;
+}
+
+.results-table th,
+.results-table td {
+  padding-inline: 1rem;
 }
 
 .video-container {
