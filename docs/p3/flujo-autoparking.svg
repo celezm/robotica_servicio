@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 50 1040 340" role="img" aria-labelledby="title desc">
+<title id="title">Estados del sistema de aparcamiento</title>
+<desc id="desc">INIT, ALIGNING, FINDING_SPOT, PARKING y END. Detalle de PARKING: aproximación, preparación a 28 grados, inserción con giro y tramo recto, y enderezado. La recuperación avanza un metro y vuelve a la misma fase.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#087f78"/></marker></defs>
+<rect width="1040" height="390" rx="20" fill="#f3f6f5"/>
+<g font-family="system-ui, sans-serif" text-anchor="middle" fill="#182a34">
+
+<rect x="24" y="66" width="176" height="76" rx="12" fill="#ffffff" stroke="#087f78"/><text x="112" y="104" dominant-baseline="middle" font-size="17" font-weight="700" fill="#07645f">INIT</text><path d="M 204 104 H 224" stroke="#087f78" stroke-width="2" marker-end="url(#arrow)"/><rect x="228" y="66" width="176" height="76" rx="12" fill="#ffffff" stroke="#087f78"/><text x="316" y="104" dominant-baseline="middle" font-size="17" font-weight="700" fill="#07645f">ALIGNING</text><path d="M 408 104 H 428" stroke="#087f78" stroke-width="2" marker-end="url(#arrow)"/><rect x="432" y="66" width="176" height="76" rx="12" fill="#ffffff" stroke="#087f78"/><text x="520" y="104" dominant-baseline="middle" font-size="17" font-weight="700" fill="#07645f">FINDING_SPOT</text><path d="M 612 104 H 632" stroke="#087f78" stroke-width="2" marker-end="url(#arrow)"/><rect x="636" y="66" width="176" height="76" rx="12" fill="#087f78" stroke="#087f78"/><text x="724" y="104" dominant-baseline="middle" font-size="17" font-weight="700" fill="white">PARKING</text><path d="M 816 104 H 836" stroke="#087f78" stroke-width="2" marker-end="url(#arrow)"/><rect x="840" y="66" width="176" height="76" rx="12" fill="#ffffff" stroke="#087f78"/><text x="928" y="104" dominant-baseline="middle" font-size="17" font-weight="700" fill="#07645f">END</text><path d="M724 146 V184 H147 V222" fill="none" stroke="#087f78" stroke-width="2" marker-end="url(#arrow)"/>
+
+<rect x="38" y="227" width="218" height="66" rx="10" fill="#bce9e2"/><text x="147" y="260" dominant-baseline="middle" font-size="16" font-weight="700">Aproximación</text><path d="M 260 260 H 288" stroke="#087f78" stroke-width="2" marker-end="url(#arrow)"/><rect x="292" y="227" width="218" height="66" rx="10" fill="#bce9e2"/><text x="401" y="260" dominant-baseline="middle" font-size="16" font-weight="700">Preparar</text><path d="M 514 260 H 542" stroke="#087f78" stroke-width="2" marker-end="url(#arrow)"/><rect x="546" y="227" width="218" height="66" rx="10" fill="#bce9e2"/><text x="655" y="260" dominant-baseline="middle" font-size="16" font-weight="700">Insertar</text><path d="M 768 260 H 796" stroke="#087f78" stroke-width="2" marker-end="url(#arrow)"/><rect x="800" y="227" width="218" height="66" rx="10" fill="#bce9e2"/><text x="909" y="260" dominant-baseline="middle" font-size="16" font-weight="700">Enderezar</text>
+<path d="M 345 340 H 405" stroke="#087f78" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="411" y="307" width="218" height="66" rx="10" fill="#bce9e2"/>
+<text x="520" y="340" dominant-baseline="middle" font-size="16" font-weight="700">Avanzar 1 m</text>
+
+<path d="M 635 340 H 695" stroke="#087f78" stroke-width="2" marker-end="url(#arrow)"/>
+
+</g></svg>

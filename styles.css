@@ -717,3 +717,368 @@ pre code {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Práctica 3: fotografías y diario de las pruebas de aparcamiento. */
+.autoparking-page {
+  background: #f2f5f3;
+}
+.autoparking-page .practice-hero {
+  padding-top: clamp(2.5rem, 5vw, 4.5rem);
+  padding-bottom: 2.5rem;
+}
+.autoparking-page .practice-hero h1 {
+  font-size: clamp(3rem, 8vw, 6rem);
+}
+.autoparking-page .practice-hero .subtitle {
+  max-width: 38ch;
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+  line-height: 1.5;
+}
+.autoparking-page .p3-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+.autoparking-page .p3-hero-actions > a:not(.button) {
+  color: #e6f8f3;
+}
+.autoparking-page .p3-hero-actions .button {
+  background: #bce9e2;
+  color: #123d3b;
+  border-color: #bce9e2;
+}
+.autoparking-page .p3-cover {
+  margin: 2.5rem 0 0;
+}
+.autoparking-page .p3-cover img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 365px;
+  object-fit: cover;
+  border: 1px solid #ffffff40;
+  border-radius: 18px;
+  box-shadow: 0 20px 45px #102a3930;
+}
+.autoparking-page .p3-cover figcaption {
+  margin-top: .65rem;
+  color: #d1e9e5;
+  font-size: .85rem;
+}
+.autoparking-page .practice-content {
+  gap: 1.6rem;
+}
+.autoparking-page .content-panel {
+  padding: clamp(1.25rem, 4vw, 3rem);
+  overflow: hidden;
+}
+.autoparking-page .content-panel h2 {
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  line-height: 1.25;
+  max-width: 35ch;
+  margin-bottom: 1.1rem;
+}
+.autoparking-page .content-panel p,
+.autoparking-page .content-panel li {
+  line-height: 1.8;
+}
+.autoparking-page .content-panel[id],
+.autoparking-page section[id] {
+  scroll-margin-top: 1.5rem;
+}
+.autoparking-page .p3-eyebrow {
+  display: block;
+  color: var(--accent-dark);
+  font-size: .74rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin: 0 0 .7rem;
+}
+.autoparking-page .p3-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 2rem 0;
+  background: #d6e6df;
+  border: 1px solid #d6e6df;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.autoparking-page .p3-facts > div {
+  display: grid;
+  gap: .35rem;
+  padding: 1.25rem;
+  background: #f4faf7;
+}
+.autoparking-page .p3-facts strong {
+  font-size: 2.2rem;
+  line-height: 1;
+  color: var(--accent-dark);
+  letter-spacing: -.05em;
+}
+.autoparking-page .p3-facts small {
+  font-size: 1.1rem;
+}
+.autoparking-page .p3-facts span {
+  font-size: .85rem;
+  color: var(--muted);
+}
+.autoparking-page .p3-toc {
+  display: block;
+  margin-top: 1rem;
+}
+.autoparking-page .p3-toc ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .45rem 1.4rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.autoparking-page .p3-toc li + li {
+  margin: 0;
+}
+.autoparking-page .p3-toc a {
+  display: block;
+  color: var(--accent-dark);
+  opacity: 1;
+  padding: .55rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.autoparking-page .p3-toc a:hover {
+  color: #182a34;
+  text-decoration: underline;
+}
+.autoparking-page .table-wrapper {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.4rem 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.autoparking-page table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .91rem;
+}
+.autoparking-page th,
+.autoparking-page td {
+  padding: .85rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.autoparking-page th {
+  background: #eef6f2;
+  color: #07645f;
+}
+.autoparking-page tr:last-child td {
+  border-bottom: 0;
+}
+.autoparking-page caption {
+  padding: .8rem 1rem;
+  text-align: left;
+  font-size: .82rem;
+  color: var(--muted);
+}
+.autoparking-page .p3-photo {
+  margin: 1.8rem 0;
+}
+.autoparking-page .p3-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+.autoparking-page figcaption {
+  margin-top: .75rem;
+  color: var(--muted);
+  font-size: .85rem;
+  line-height: 1.65;
+}
+.autoparking-page .p3-split {
+  display: grid;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(1.2rem, 4vw, 3rem);
+  background: #f2f7f4;
+  padding: 1.2rem;
+  margin: 2rem 0;
+  border-radius: 16px;
+}
+.autoparking-page .p3-split img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+.autoparking-page .p3-split figcaption {
+  font-size: 1rem;
+  color: #435b62;
+}
+.autoparking-page .p3-split strong {
+  display: block;
+  margin-bottom: .75rem;
+  font-size: 1.5rem;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.autoparking-page .p3-phase-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+.autoparking-page .p3-phase-gallery figure {
+  margin: 0;
+  overflow: hidden;
+  background: #f4f8f6;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.autoparking-page .p3-phase-gallery img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.autoparking-page .p3-phase-gallery figcaption {
+  padding: .2rem 1rem 1rem;
+}
+.autoparking-page .p3-phase-gallery figcaption > span {
+  color: var(--accent);
+  font-weight: 800;
+  font-size: .75rem;
+}
+.autoparking-page .p3-phase-gallery strong {
+  display: block;
+  font-size: 1rem;
+  color: var(--ink);
+  margin: .2rem 0 .35rem;
+}
+.autoparking-page #videos {
+  background: #f9fcfa;
+}
+.autoparking-page .p3-video-grid,
+.autoparking-page .p3-final-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+.autoparking-page .p3-final-comparison {
+  margin-top: 1.5rem;
+  align-items: stretch;
+}
+.autoparking-page .p3-final-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+  padding: 1.2rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.autoparking-page .p3-final-gallery h3 {
+  margin: 1rem 0 .2rem;
+  border: 0;
+  padding: 0;
+  font-size: 1.3rem;
+  line-height: 1.3;
+}
+.autoparking-page .p3-final-gallery .p3-photo {
+  margin: 0;
+}
+.autoparking-page .p3-video-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1.2rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.autoparking-page .p3-video-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+.autoparking-page .p3-tag {
+  font-size: .72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.autoparking-page .p3-status {
+  font-size: .72rem;
+  padding: .2rem .6rem;
+  border-radius: 100px;
+  color: #166349;
+  background: #e4f4ea;
+  font-weight: 700;
+}
+.autoparking-page .p3-status-review {
+  color: #895125;
+  background: #fff0dd;
+}
+.autoparking-page .p3-video-card h3 {
+  padding: 0;
+  border: 0;
+  font-size: 1.3rem;
+  margin: 1rem 0 .2rem;
+  line-height: 1.3;
+}
+.autoparking-page .p3-video-card > p {
+  font-size: .9rem;
+}
+.autoparking-page .p3-video-card figure {
+  margin: auto 0 0;
+}
+.autoparking-page .p3-video-card video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 720 / 808;
+  object-fit: contain;
+  background: #12191e;
+  border-radius: 10px;
+}
+.autoparking-page .p3-video-card .p3-video-note {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  margin-bottom: 0;
+}
+.autoparking-page .p3-takeaway {
+  padding: 1.4rem;
+  border-left: 3px solid var(--accent);
+  background: #eaf4ef;
+  border-radius: 0 10px 10px 0;
+}
+@media (max-width: 650px) {
+  .autoparking-page .p3-facts > div {
+    padding: 1rem .7rem;
+  }
+  .autoparking-page .p3-facts strong {
+    font-size: 1.8rem;
+  }
+  .autoparking-page .p3-toc ul,
+  .autoparking-page .p3-split,
+  .autoparking-page .p3-phase-gallery,
+  .autoparking-page .p3-video-grid,
+  .autoparking-page .p3-final-comparison {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .autoparking-page .p3-phase-gallery {
+    gap: 1.2rem;
+  }
+  .autoparking-page .p3-cover img {
+    min-height: 180px;
+    object-fit: cover;
+  }
+}

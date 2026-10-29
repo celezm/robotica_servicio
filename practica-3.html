@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Práctica 3 de Robótica de Servicios.">
-  <title>Práctica 3 | Robótica de Servicios</title>
+  <meta name="description" content="Autoparking con LiDAR y odometría: alineamiento, detección del hueco y aparcamiento por fases en Unibotics.">
+  <title>Práctica 3 · Autoparking | Robótica de Servicio</title>
   <link rel="stylesheet" href="styles.css">
   <script src="script.js" defer></script>
 </head>
-<body>
+<body class="autoparking-page">
   <header class="practice-header">
     <div class="nav">
-      <a class="brand" href="index.html">Robótica de Servicios</a>
+      <a class="brand" href="index.html">Robótica de Servicio</a>
       <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav">
         <span>Menú</span>
       </button>
@@ -19,7 +19,7 @@
         <a href="index.html">Inicio</a>
         <a href="practica-1.html">Práctica 1</a>
         <a href="practica-2.html">Práctica 2</a>
-        <a href="practica-3.html">Práctica 3</a>
+        <a href="practica-3.html" aria-current="page">Práctica 3</a>
         <a href="practica-4.html">Práctica 4</a>
         <a href="practica-5.html">Práctica 5</a>
         <a href="practica-6.html">Práctica 6</a>
@@ -27,39 +27,278 @@
     </div>
 
     <section class="practice-hero">
-      <p>Práctica 3</p>
-      <h1>Práctica 3</h1>
+      <p class="p3-eyebrow">Práctica 03 · Robótica de Servicio</p>
+      <h1>Autoparking</h1>
       <p class="subtitle">
-        Espacio reservado para completar la descripción de la práctica.
+        Programación de un coche autónomo con dinámica Ackermann. 
       </p>
     </section>
   </header>
 
   <main class="practice-main">
-    <section class="practice-content">
-      <article class="content-panel">
-        <div class="meta">
-          <span>Práctica pendiente de completar</span>
+    <section class="practice-content" aria-label="Desarrollo de la práctica de Autoparking">
+      <article class="content-panel" id="objetivo">
+        <div class="meta"><span>Desarrollo de la práctica</span></div>
+        <p>En esta práctica se combina la información del LiDAR, utilizada para identificar los obstáculos y detectar el espacio libre, con la odometría, que permite estimar el desplazamiento y la orientación del vehículo. También se habilita la visualización de la nube de puntos, que facilita la comparación entre la percepción del algoritmo y Gazebo, permitiendo analizar los errores de detección y ejecución de la maniobra.</p>
+        <p>El programa se estructura mediante una máquina de estados: Init, Alineamiento, Búsqueda, Maniobra de aparcamiento y Detención del coche. La etapa de maniobra también se divide en subetapas (preparación de la entrada, inserción marcha atrás y enderezado), lo que permite ajustar cada fase de forma independiente.</p>
+      </article>
+
+      <article class="content-panel" id="organizacion">
+        <h2>Organización del código y máquina de estados</h2>
+        <p>El código se ha estructurado en 3 ficheros distintos: </p>
+        <div class="table-wrapper"><table>
+          <thead><tr><th>Fichero</th><th>Responsabilidad</th></tr></thead>
+          <tbody>
+            <tr><td><code>code.py</code></td><td>Programa principal. Lee los sensores, ejecuta el estado actual, gestiona las transiciones y aplica los comandos de movimiento al coche.</td></tr>
+            <tr><td><code>alignment.py</code></td><td>Transforma y filtra los puntos del LiDAR, estima la referencia lateral y calcula los errores de distancia y orientación.</td></tr>
+            <tr><td><code>parking.py</code></td><td>Mide el espacio libre, mantiene el hueco candidato y ejecuta las fases de aparcamiento.</td></tr>
+          </tbody>
+        </table></div>
+        <p>En el fichero <code>code.py</code> es donde se desarrolla la máquina de estados, que se divide en las siguientes etapas:</p>
+        <figure>
+          <img src="docs/p3/flujo-autoparking.svg" width="1040" height="390" alt="Secuencia INIT, ALIGNING, FINDING_SPOT, PARKING y END. PARKING se divide en aproximación, preparación a la izquierda, inserción marcha atrás y enderezado. Ante un bloqueo trasero se avanza un metro y se retoma la fase." loading="lazy" style="max-width:100%;height:auto;">
+          <figcaption>Fases de la práctica.</figcaption>
+        </figure>
+        <div class="table-wrapper"><table>
+          <thead><tr><th>Estado</th><th>Acción</th></tr></thead>
+          <tbody>
+            <tr><td><code>INIT</code></td><td>Busca una referencia de la fila de coches y acumula cuatro estimaciones válidas antes de pasar al alineamiento.</td></tr>
+            <tr><td><code>ALIGNING</code></td><td>Corrige distancia y orientación hasta mantener ambos errores dentro de tolerancia durante seis lecturas.</td></tr>
+            <tr><td><code>FINDING_SPOT</code></td><td>Sigue la fila, mide el espacio a la derecha, confirma un hueco y avanza hasta dejar su centro detrás.</td></tr>
+            <tr><td><code>PARKING</code></td><td>Completa la aproximación al punto de entrada y llama a <code>park()</code> en cada iteración, que contiene las subetapas de maniobra.</td></tr>
+            <tr><td><code>END</code></td><td>Mantiene el coche parado después de que la maniobra confirme su posición y orientación finales.</td></tr>
+          </tbody>
+        </table></div>
+      </article>
+
+      <article class="content-panel" id="lidar">
+        <h2>Procesamiento del LiDAR</h2>
+        <p>El LiDAR proporciona una nube de puntos que representa las superficies observadas en el entorno, sin identificar directamente los objetos. Por ello, para
+          utilizar esta información en el alineamiento y la detección de huecos, se realiza un procesamiento previo que incluye
+          la validación de las coordenadas, la transformación al sistema del vehículo y el filtrado de los puntos.</p>
+        <figure class="p3-photo"><img src="docs/p3/lidar.jpg" width="720" height="242" loading="lazy" alt="Nube de puntos del LiDAR visualizada durante la prueba, con puntos detectados en el entorno a la derecha del coche."><figcaption>Los puntos azules representan todos los puntos del LiDAR y los rojos, los puntos filtrados por el código.</figcaption></figure>
+        <p>En primer lugar, se descartan los puntos que contienen coordenadas infinitas o NaN. A continuación, cada punto se
+          transforma desde el sistema de referencia del sensor al del vehículo mediante una rotación y una traslación que
+          consideran la orientación y la posición estimada del LiDAR, puesto que se encuentra en la parte trasera del coche.
+          Obtieniendo el siguiente sistema en el que: el eje <code>x</code> corresponde a la dirección longitudinal, el eje <code>y</code> a la dirección lateral y el eje <code>z</code> a la altura. Los puntos situados a la derecha del vehículo presentan valores negativos de <code>y</code>.</p>
+        <pre class="code-block"><code>x_coche = SENSOR_X + cos(SENSOR_YAW) * x - sin(SENSOR_YAW) * y
+y_coche = SENSOR_Y + sin(SENSOR_YAW) * x + cos(SENSOR_YAW) * y
+z_coche = SENSOR_Z + z</code></pre>
+        <p>El filtrado elimina los puntos asociados al propio vehículo y restringe el intervalo de alturas considerado para
+          los obstáculos, para eliminar ruido. La estimación de la fila se realiza sobre la sublista de puntos válidos,
+          mientras que la comprobación de visibilidad utiliza una nube más densa que conserva los puntos del suelo. Estos
+          puntos permiten determinar si los rayos del sensor han atravesado la región lateral de interés, sin clasificarlos
+          como obstáculos.</p>
+
+      </article>
+
+      <article class="content-panel" id="alineamiento">
+        <h2>Etapas INIT y ALIGNING: reconocer la fila y colocarse paralelo</h2>
+        <p>El alineamiento busca situar el vehículo paralelo a la fila de coches y mantener una separación lateral adecuada antes de buscar una plaza. Para ello, primero se estima una recta que representa la fila vista desde arriba. Después, esa referencia se utiliza para calcular los errores de distancia y orientación y generar los comandos de movimiento.</p>
+
+        <h3>Estimación de la fila en fit_side_line()</h3>
+        <p>La referencia se obtiene mediante dos ajustes sucesivos. Una estimación inicial basada en medianas permite seleccionar los puntos próximos a la fila. A continuación, mínimos cuadrados calcula una recta más precisa a partir de esos puntos de soporte. Todo el proceso se realiza en el plano <code>x–y</code> del vehículo, una vez transformados los puntos del LiDAR.</p>
+
+        <h4>1. Selección de la región lateral</h4>
+        <p>Se consideran puntos situados a la derecha del coche, en la región donde se espera encontrar los vehículos aparcados. El código restringe su posición longitudinal entre −4 y 12 m, su distancia lateral entre 0,8 y 9 m y su altura a un máximo de 1,55 m. Esta selección reduce los datos que participan en la estimación, aunque por sí sola no identifica qué puntos pertenecen a cada objeto.</p>
+
+        <h4>2. Agrupación y mediana lateral</h4>
+        <p>Los puntos se agrupan en intervalos longitudinales de 0,5 m. Cada intervalo se representa mediante su centro y la mediana lateral, reduciendo la influencia de puntos aislados.</p>
+
+        <h4>3. Estimación de la primera recta</h4>
+        <p>La pendiente inicial es la mediana de las pendientes entre parejas de representantes. El término independiente se obtiene con la mediana de <code>y − m · x</code>. Esta recta permite seleccionar los puntos que se utilizarán en el ajuste final.</p>
+
+        <h4>4. Selección de los puntos de soporte</h4>
+        <p>Se conservan los puntos cuya desviación lateral respecto a la recta inicial no supera 0,16 m. Esta diferencia se mide en el eje <code>y</code> y permite descartar puntos alejados antes del ajuste final.</p>
+        <pre class="code-block"><code>desviacion_lateral = abs(y - (m_inicial * x + b_inicial))
+if desviacion_lateral &lt;= 0.16:
+    inliers.append(punto)</code></pre>
+
+        <h4>5. Refinamiento mediante mínimos cuadrados</h4>
+        <p>Con los puntos aceptados se calcula la recta que minimiza la suma de las desviaciones laterales al cuadrado. A partir de las medias de sus coordenadas se obtienen la pendiente y el término independiente:</p>
+        <pre class="code-block"><code>m = suma((x - x_media) * (y - y_media)) / suma((x - x_media) ** 2)
+b = y_media - m * x_media</code></pre>
+        <p>Las medianas aportan una primera estimación menos sensible a puntos aislados. Mínimos cuadrados refina después la recta utilizando los puntos seleccionados.</p>
+
+        <h3>Validación y fijación de la referencia en INIT</h3>
+        <p>El programa comprueba que el ajuste tenga soporte suficiente. Antes de calcular la recta exige al menos seis intervalos longitudinales y una extensión de 4 m entre sus representantes. Después de seleccionar los puntos de soporte, exige al menos 30 puntos repartidos en seis intervalos. Si estas condiciones no se cumplen, se descarta la estimación de esa lectura.</p>
+        <p>La recta final se expresa mediante una normal de longitud unitaria y un desplazamiento. Para la expresión <code>y = m · x + b</code>, una representación equivalente es:</p>
+        <pre class="code-block"><code>normal_x = -m / sqrt(1 + m ** 2)
+normal_y =  1 / sqrt(1 + m ** 2)
+offset   = -b / sqrt(1 + m ** 2)
+
+normal_x * x + normal_y * y + offset = 0</code></pre>
+        <p>En el código se ajusta el signo de la normal y del desplazamiento para mantener una orientación coherente. La normal unitaria permite calcular la distancia a la recta, mientras que su dirección permite obtener la orientación de la fila. Aunque en la vista tridimensional se perciban superficies verticales, la referencia utilizada por el controlador es una recta en planta.</p>
+        <p>En <code>INIT</code> se acumulan cuatro estimaciones válidas consecutivas. Cada una se transforma al sistema de referencia de la pose inicial usando la odometría, de modo que pueden promediarse aunque el coche se haya desplazado entre lecturas. La normal media se vuelve a normalizar para obtener la referencia que utilizará el alineamiento. Si una lectura no aporta una estimación válida, se reinicia la acumulación.</p>
+        <p>Mientras no haya una referencia válida, el vehículo puede avanzar lentamente hasta el límite de búsqueda configurado o detenerse si detecta un obstáculo frontal. La validez geométrica del ajuste no garantiza por sí sola que se haya seleccionado la fila correcta. Durante las pruebas también fue necesario comprobar que la distancia obtenida fuera coherente con los coches y no con las farolas.</p>
+
+        <h3>Control de distancia y orientación en ALIGNING</h3>
+        <p>Una vez fijada la referencia, la pose actual se expresa en el sistema inicial para calcular la distancia del coche a la recta. El objetivo es situar el centro del vehículo a 2 m de esa referencia. Para una anchura de 2,10 m, esta distancia corresponde aproximadamente a una separación de 0,95 m entre el lateral del coche y la recta.</p>
+        <p>El controlador utiliza un error lateral y un error de rumbo. El primero es la diferencia entre la distancia actual y la deseada. El segundo es la diferencia angular entre la orientación actual y una dirección paralela a la fila, escogiendo el sentido más próximo al del vehículo. Los ángulos se normalizan para evitar discontinuidades al pasar entre −π y π.</p>
+        <pre class="code-block"><code>error_lateral = distancia_a_fila - 2.0
+error_rumbo = normalizar_angulo(rumbo_objetivo - rumbo_actual)
+
+curvatura = K_HEADING * error_rumbo - K_P * error_lateral
+curvatura -= K_I * integral + K_D * derivada
+velocidad_angular = velocidad_lineal * curvatura</code></pre>
+        <p>El término proporcional corrige la separación lateral y el término de rumbo orienta el coche en paralelo. La derivada introduce una corrección según la variación del error lateral. El término integral permanece desactivado con <code>K_I = 0</code>. La curvatura se limita mediante el ángulo máximo de dirección y la distancia entre ejes, y la velocidad se reduce cuando aparece un obstáculo frontal.</p>
+        <p>El alineamiento se acepta cuando el error lateral es inferior a 0,10 m y el error angular es inferior a 3° durante seis lecturas consecutivas. Mientras ambos errores cumplen esas condiciones, el coche se mantiene detenido para confirmar la estabilidad. Si dejan de cumplirse, se reinicia el contador y continúa la corrección. Al completar la confirmación se pasa a <code>FINDING_SPOT</code>.</p>
+      </article>
+
+      <article class="content-panel" id="hueco">
+        <h2>Etapa FINDING_SPOT: medir un hueco a la derecha</h2>
+        <h3>Separar ocupado, libre y sin datos</h3>
+        <p>La detección de huecos trabaja sobre una franja lateral fija en coordenadas del coche, sin depender de la recta estimada para alinearse. Se comprueba una zona que empieza a 1,75 m a la derecha y tiene 2,6 m de profundidad. Los puntos asociados a posibles obstáculos se filtran por altura y se cuentan por intervalos longitudinales de 0,25 m.</p>
+        <p>La ausencia de posibles obstáculos detectados no basta para declarar libre una zona. Se comprueba qué rayos del LiDAR atraviesan el volumen lateral, incluyendo los que entran por sus caras longitudinales. Con ello se distinguen tres situaciones: <code>OCUPADO</code> cuando hay suficientes puntos asociados a posibles obstáculos, <code>LIBRE</code> cuando hay observación de la zona sin esos obstáculos y <code>SIN_DATOS</code> cuando no existe soporte de visibilidad suficiente. Tres lecturas consecutivas sin observación lateral fiable detienen la búsqueda.</p>
+        <h3>Longitud observada y distancia recorrida</h3>
+        <p>La longitud se obtiene de dos formas complementarias. Por un lado, <code>observed_side_interval()</code> busca un intervalo libre continuo junto al vehículo y hacia atrás. Por otro, una pequeña zona de comprobación próxima a la parte delantera permite acumular con odometría el espacio libre que va pasando a su lado. Si se pierde la observación, no se une ese tramo desconocido con el anterior.</p>
+        <p>Aquí apareció un fallo que costaba ver solo mirando el contador: el coche empezaba a buscar cuando ya había pasado junto a una parte de la plaza. El programa medía unos dos metros, aunque en la imagen se veía espacio de sobra. La solución fue aprovechar también lo que el LiDAR estaba observando junto al coche y hacia atrás, en lugar de empezar a contar todo desde cero.</p>
+        <p>El coche mide 4,87 m de largo y el mínimo configurado para el hueco es de 5,5 m, dejando un margen longitudinal total de 0,63 m. Ese mínimo sirve para seleccionar candidatos. Por sí solo no garantiza que todas las trayectorias quepan entre los obstáculos.</p>
+        <pre class="code-block"><code>CAR_LENGTH = 4.87
+SLOT_LENGTH = 5.5
+SLOT_WIDTH = 2.6
+SLOT_BIN_SIZE = 0.25
+GAP_CONFIRMATION_SCANS = 3
+GAP_CONFIRMATION_DISTANCE = 0.45</code></pre>
+        <h3>Confirmación y punto de entrada</h3>
+        <p>El centro del candidato se guarda en coordenadas del mundo para seguir el mismo hueco mientras el coche avanza. La confirmación exige al menos tres observaciones válidas y un avance mínimo de 0,45 m desde su primera detección. Si aparece un obstáculo dentro del tramo reservado, se descarta.</p>
+        <p>Después de confirmar, el coche sigue por la fila hasta que el centro del hueco está detrás y el punto de entrada queda a 1 m o menos por delante. En <code>PARKING</code> termina de aproximarse, con una tolerancia longitudinal de 0,30 m. Así se evita iniciar la marcha atrás hacia un espacio que todavía queda delante del vehículo.</p>
+      </article>
+
+      <article class="content-panel" id="aparcamiento">
+        <h2>Etapa PARKING: maniobra concentrada en park()</h2>
+        <p>La primera versión encontraba la plaza y ejecutaba dos arcos de 1,4 m. El problema era que al final anunciaba que había aparcado, pero el coche seguía fuera. Con esa geometría solo se desplazaba unos 0,59 m hacia el lateral. A partir de ahí pasé a comprobar orientación y posición reales, y separé los pasos de la maniobra para poder ajustarlos uno a uno.</p>
+        <pre class="code-block"><code>command = parking.park(pose, car_points, gap_center_world,
+                       WHEELBASE, parking_controller_state)
+parking_controller_state = command["state"]
+HAL.setV(command["velocity"])
+HAL.setW(command["angular_velocity"])</code></pre>
+        <p><code>park()</code> recibe la pose, los obstáculos y el hueco seleccionado y devuelve las velocidades, la fase y su memoria para la siguiente llamada. Los parámetros y las condiciones de cambio de la maniobra están dentro de esta función.</p>
+        <div class="p3-phase-gallery" aria-label="Fotogramas de la maniobra">
+          <figure><img src="docs/p3/preparacion.jpg" width="720" height="278" alt="El coche amarillo avanza a la izquierda para preparar la entrada." loading="lazy"><figcaption><span>01</span><strong>Preparar</strong>Avanzar a la izquierda hasta unos 28°.</figcaption></figure>
+          <figure><img src="docs/p3/insercion.jpg" width="720" height="278" alt="El coche amarillo retrocede en diagonal para introducir la trasera en la plaza." loading="lazy"><figcaption><span>02</span><strong>Meter la trasera</strong>Entrar marcha atrás y conservar la orientación.</figcaption></figure>
+          <figure><img src="docs/p3/enderezado.jpg" width="720" height="278" alt="El coche amarillo continúa la maniobra cerca de la fila para enderezarse." loading="lazy"><figcaption><span>03</span><strong>Enderezar</strong>Contragirar mientras sigue retrocediendo.</figcaption></figure>
         </div>
-        <h2>Objetivo</h2>
-        <p>
-          Pendiente de completar.
-        </p>
+        <h3>1. AVANZAR_IZQUIERDA: preparar la entrada</h3>
+        <p>El coche avanza girando a la izquierda hasta unos 28° respecto a su orientación al empezar la maniobra. Se mide el cambio de orientación de la odometría, no el ángulo de las ruedas. Con una tolerancia de 1,5°, puede cambiar de fase ligeramente antes de los 28°. Se redujo este objetivo porque una preparación de 45–50° alargaba demasiado el avance.</p>
+        <h3>2. METER_TRASERA_GIRO y METER_TRASERA_RECTO</h3>
+        <p>Con una preparación más corta, la inserción necesita un giro marcha atrás antes del tramo recto. Al terminar la preparación se calculan un radio, un ángulo de inserción y una longitud recta compatibles con el objetivo y con el límite de dirección configurado. Durante el giro, la trasera se desplaza hacia la derecha. Después el coche mantiene la orientación diagonal y retrocede en recto, con pequeñas correcciones si deriva.</p>
+        <p>El signo de la velocidad angular no debe confundirse con el de la dirección de las ruedas: al retroceder, girar las ruedas a la derecha produce un giro positivo del cuerpo según la convención utilizada. El enderezado posterior utiliza velocidad angular negativa.</p>
+        <h3>3. ENDEREZAR_DENTRO: anticipar el contragiro</h3>
+        <p>El tramo recto termina cuando su distancia pendiente es menor o igual a <code>early_straightening</code> y la profundidad estimada de la trasera alcanza <code>rear_entry_depth</code>. La profundidad incluye la posición y la orientación de la parte trasera y su anchura proyectada, no solo la posición del centro del coche.</p>
+        <pre class="code-block"><code>early_straightening = 3.0
+rear_entry_depth = 1.50
+
+if remaining &lt;= early_straightening and rear_depth &gt;= rear_entry_depth:
+    # Recalcular el arco desde la posición actual y empezar a enderezar.
+    ...</code></pre>
+        <p>Este parámetro ha sido uno de los ajustes más útiles. Si el coche esperaba demasiado, la trasera se acercaba a las farolas antes de empezar a enderezar. Con <code>early_straightening = 3.0</code> adelanto ese cambio. El 3,0 no indica cuánto debe retroceder: es el umbral de distancia que aún quedaría en el tramo recto, y también tiene que cumplirse la condición de entrada de la trasera. Después recalculo el arco desde donde está el coche.</p>
+        <p>La maniobra solo declara su final si la posición queda a menos de 0,35 m del objetivo y el error angular es como máximo 1,5°. Si el coche termina fuera de esa tolerancia, se detiene sin marcar el aparcamiento como completado.</p>
+        <p>Otro ajuste vino de la respuesta del coche: no giraba tanto como esperaba el modelo. En vez de aumentar sin más la distancia de los arcos, comparo el giro por metro que solicito con el que mide la odometría y compenso la diferencia. Además, aparco despacio, a 0,18 m/s nominales. Si la velocidad angular llega a su límite, reduzco el avance para no perder la curvatura prevista. La comprobación de obstáculos sigue activa.</p>
       </article>
 
-      <article class="content-panel">
-        <h2>Desarrollo</h2>
-        <p>
-          Pendiente de completar.
-        </p>
-        <pre class="code-block"><code></code></pre>
+      <article class="content-panel" id="obstaculos">
+        <h2>Obstáculos y recuperación de la maniobra</h2>
+        <p>Antes de enviar cada comando, <code>path_is_clear()</code> aproxima el movimiento del coche y comprueba si los puntos asociados a posibles obstáculos invaden su huella durante un horizonte corto. En las fases de circulación también existe una comprobación frontal para reducir la velocidad o parar.</p>
+        <p>Durante la marcha atrás, si aparece un obstáculo próximo a la trasera o un bloqueo de la trayectoria asociado a puntos traseros, <code>park()</code> pausa la fase y guarda el comando. La recuperación consiste en avanzar 1 m en recto, midiendo el desplazamiento con odometría. Si el avance queda bloqueado, se detiene. Cuando completa el metro, comprueba la trayectoria de vuelta y retoma la fase y el giro anteriores si está libre.</p>
+        <p>Ese avance no cuenta como recorrido de un arco marcha atrás ni se utiliza para recalibrar el giro. Si la trayectoria de vuelta sigue bloqueada, el coche espera en lugar de reanudarla automáticamente.</p>
       </article>
 
-      <article class="content-panel">
+      <article class="content-panel" id="ajustes">
+        <h2>Ajustes y evolución de las pruebas</h2>
+        <div class="table-wrapper"><table>
+          <caption>Valores de referencia de la versión actual</caption>
+          <thead><tr><th>Parámetro</th><th>Valor</th><th>Uso</th></tr></thead>
+          <tbody>
+            <tr><td>Dimensiones y distancia entre ejes</td><td>4,87 × 2,10 m y 3,351 m entre ejes</td><td>Geometría del vehículo y cálculo de curvatura.</td></tr>
+            <tr><td>Distancia a la fila</td><td>2,0 m</td><td>Referencia para alineamiento y seguimiento.</td></tr>
+            <tr><td>Hueco mínimo</td><td>5,5 m</td><td>Selección de espacio longitudinal suficiente.</td></tr>
+            <tr><td>Ángulo de preparación</td><td>28°</td><td>Limita el avance inicial a la izquierda.</td></tr>
+            <tr><td>Velocidad de maniobra</td><td>0,18 m/s</td><td>Valor nominal, reducido cerca de objetivos o al saturar el giro.</td></tr>
+            <tr><td><code>early_straightening</code></td><td>3,0 m</td><td>Umbral de distancia pendiente para anticipar el enderezado.</td></tr>
+            <tr><td>Recuperación frontal</td><td>1,0 m</td><td>Avance tras un bloqueo detectado detrás.</td></tr>
+          </tbody>
+        </table></div>
+        <h3>Ajuste de las ganancias de seguimiento</h3>
+        <p>La configuración de seguimiento se ha revisado con una velocidad nominal de 0,75 m/s, <code>K_P = 0.72</code>, <code>K_D = 0.12</code> y <code>K_HEADING = 1.85</code>. El ajuste reduce ligeramente la velocidad y el peso de la corrección lateral, y aumenta los términos de derivada y orientación. Su propósito es moderar la corrección lateral y priorizar la alineación del vehículo. El efecto debe comprobarse en nuevas ejecuciones de Gazebo. El término integral permanece desactivado.</p>
+        <p>Los vídeos de esta página corresponden a la configuración anterior del seguimiento. El cambio de estas ganancias no modifica los parámetros de la función de aparcamiento <code>park()</code>.</p>
+        <p>Las pruebas se han centrado primero en conseguir un alineamiento coherente y después en medir correctamente la plaza. Entre los problemas encontrados estuvieron la referencia situada en la zona de las farolas, la confusión entre el borde de la ventana del LiDAR y un hueco real, y el recuento incompleto de una plaza que ya había empezado a pasar junto al coche.</p>
+        <p>Una vez estabilizada la búsqueda, el ajuste se concentró en la maniobra: los arcos iniciales dejaban el coche fuera, la respuesta angular real era menor que la prevista y el enderezado tardío acercaba demasiado la trasera a los elementos del borde. Las fases explícitas y el registro de ángulo, profundidad y distancia permiten identificar dónde se produce cada problema.</p>
+      </article>
+
+      <article class="content-panel" id="videos">
         <h2>Resultados y conclusiones</h2>
-        <p>
-          Pendiente de completar.
-        </p>
+        <p>La solución se ha evaluado en tres configuraciones: un hueco amplio entre dos coches, una zona con solo los dos vehículos iniciales y un escenario sin coches. El objetivo de estas pruebas es comprobar tanto la detección del espacio libre como la ejecución de la maniobra y la precisión de la posición final.</p>
+        <p>Las pruebas muestran que el vehículo detecta el espacio libre y ejecuta las fases de entrada y enderezado. La maniobra se completa en el hueco entre coches. En los escenarios abiertos, la posición final todavía puede pulirse mediante ajustes del punto de entrada y del control.</p>
+        <div class="p3-video-grid">
+          <section class="p3-video-card" id="video-hueco-grande">
+            <div class="p3-video-heading"><span class="p3-tag">Prueba 01</span></div>
+            <h3>Situación inicial</h3>
+            <p>La plaza está delimitada por delante y por detrás.
+              Se puede seguir la secuencia completa y ver cómo el coche 
+              recupera espacio antes de terminar de enderezarse.</p>
+            <figure>
+              <video controls preload="none" playsinline poster="docs/p3/poster-coches.jpg" width="720" height="808" aria-label="Prueba completa de aparcamiento entre dos coches">
+                <source src="docs/p3/parking_coches.mp4" type="video/mp4">
+                <a href="docs/p3/parking_coches.mp4">Descargar el vídeo de la prueba entre coches</a>.
+              </video>
+              <figcaption>Al final de esta ejecución el registro muestra «coche dentro y enderezado» y confirma la maniobra.</figcaption>
+            </figure>
+            <p class="p3-video-note"></p>
+          </section>
+          <section class="p3-video-card" id="video-coches-inicio">
+            <div class="p3-video-heading"><span class="p3-tag">Prueba 02</span></div>
+            <h3>Sólo los coches del principio</h3>
+            <p>Dejo libre el resto de la zona para comprobar que la detección no necesita un coche en cada extremo de la plaza. Aquí aparece una diferencia entre quedar paralelo y alcanzar la posición objetivo.</p>
+            <figure>
+              <video controls preload="none" playsinline poster="docs/p3/poster-abierto.jpg" width="720" height="808" aria-label="Prueba de aparcamiento con solo los dos coches iniciales">
+                <source src="docs/p3/parking_coche_detras.mp4" type="video/mp4">
+                <a href="docs/p3/parking_coche_detras.mp4">Descargar el vídeo del escenario abierto</a>.
+              </video>
+              <figcaption>El coche termina paralelo.</figcaption>
+            </figure>
+            <p class="p3-video-note"></p>
+          </section>
+        </div>
+        <div class="p3-final-comparison">
+          <section class="p3-video-card" id="video-sin-coches">
+            <div class="p3-video-heading"><span class="p3-tag">Prueba 03</span></div>
+            <h3>Aparcamiento sin coches</h3>
+            <p>En esta prueba dejo libre la zona de aparcamiento, sin vehículos que marquen los extremos de una plaza. Me sirve para observar cómo responde el sistema cuando tiene que seleccionar espacio libre sin esas referencias.</p>
+            <figure>
+              <video controls preload="none" playsinline poster="docs/p3/poster-sin-coches.jpg" width="720" height="808" aria-label="Prueba de aparcamiento en un escenario sin coches">
+                <source src="docs/p3/parking_sin_coches.mp4" type="video/mp4">
+                <a href="docs/p3/parking_sin_coches.mp4">Descargar el vídeo del aparcamiento sin coches</a>.
+              </video>
+              <figcaption>El coche termina paralelo al borde.</figcaption>
+            </figure>
+            <p class="p3-video-note"></p>
+          </section>
+        <section class="p3-final-gallery" aria-label="Imágenes finales de las tres pruebas">
+          <div class="p3-final-heading">
+            <div class="p3-video-heading"><span class="p3-tag">Resumen</span></div>
+            <h3>Posiciones finales</h3>
+          </div>
+          <figure class="p3-photo"><a href="docs/p3/final-coches.jpg"><img src="docs/p3/portada.jpg" width="720" height="278" loading="lazy" alt="Resultado de la prueba entre coches: el vehículo amarillo queda aparcado entre los dos blancos."></a><figcaption><strong>Prueba 01.</strong> El registro confirma el aparcamiento. Pulsa la imagen para ver el fotograma completo.</figcaption></figure>
+          <figure class="p3-photo"><a href="docs/p3/final-abierto.jpg"><img src="docs/p3/resultado-abierto.jpg" width="720" height="278" loading="lazy" alt="Resultado del escenario abierto: el coche está paralelo junto a la fila, pero no alcanza la tolerancia de posición."></a><figcaption><strong>Prueba 02.</strong> Pulsa para ver el fotograma completo.</figcaption></figure>
+          <figure class="p3-photo p3-result-sin-coches"><a href="docs/p3/final-sin-coches.jpg"><img src="docs/p3/resultado-sin-coches.jpg" width="720" height="278" loading="lazy" alt="Resultado final de la prueba 3 sin coches: el vehículo amarillo queda paralelo al borde de la zona de aparcamiento."></a><figcaption><strong>Prueba 03.</strong> Pulsa la imagen para ver el fotograma completo.</figcaption></figure>
+        </section>
+        </div>
+        <section id="conclusiones">
+          <h3>Conclusiones</h3>
+          <ul>
+            <li><strong>La combinación de LiDAR y odometría permite abordar las distintas etapas del aparcamiento.</strong> 
+                        El LiDAR aporta información sobre los obstáculos y el espacio libre, mientras que la odometría 
+                        permite medir el avance y la orientación del vehículo durante la maniobra.</li>
+            <li><strong>La división por estados facilita el desarrollo y los ajustes.</strong> 
+                        Concentrar la maniobra en <code>park()</code> permite modificar sus fases y añadir 
+                        la recuperación ante obstáculos sin alterar el alineamiento ni la búsqueda del hueco.</li>
+            <li><strong>Las pruebas muestran un funcionamiento bastante satisfactorio, con aspectos que todavía pueden pulirse.</strong> La maniobra se completa en el hueco entre coches y, en los escenarios abiertos, el vehículo consigue entrar y quedar paralelo.
+                        El siguiente ajuste se centra en afinar la posición final y comprobar el comportamiento con distintas 
+                        posiciones iniciales y tamaños más variados de plaza.</li>
+            <li><strong>La búsqueda del hueco y la maniobra pueden realizarse tanto con coches aparcados alrededor como sin ellos.</strong> El sistema necesita al menos un coche de referencia durante la etapa <code>INIT</code> para obtener la línea a la que debe alinearse. Una vez fijada esa referencia, puede buscar espacio libre y ejecutar el aparcamiento sin que otros vehículos delimiten la plaza.</li>
+          </ul>
+        </section>
         <div class="practice-nav">
           <a class="button secondary" href="practica-2.html">Práctica anterior</a>
           <a class="button" href="practica-4.html">Siguiente práctica</a>
@@ -69,7 +308,7 @@
   </main>
 
   <footer>
-    <p>Robótica de Servicios · Diario de prácticas</p>
+    <p>Robótica de Servicio · Diario de prácticas</p>
     <p class="footer-small">© <span data-year></span></p>
   </footer>
 </body>
