@@ -228,8 +228,8 @@ if remaining &lt;= early_straightening and rear_depth &gt;= rear_entry_depth:
 
       <article class="content-panel" id="videos">
         <h2>Resultados y conclusiones</h2>
-        <p>La solución se ha evaluado en tres configuraciones: un hueco amplio entre dos coches, una zona con solo los dos vehículos iniciales y un escenario sin coches. El objetivo de estas pruebas es comprobar tanto la detección del espacio libre como la ejecución de la maniobra y la precisión de la posición final.</p>
-        <p>Las pruebas muestran que el vehículo detecta el espacio libre y ejecuta las fases de entrada y enderezado. La maniobra se completa en el hueco entre coches. En los escenarios abiertos, la posición final todavía puede pulirse mediante ajustes del punto de entrada y del control.</p>
+        <p>La solución se ha evaluado en cuatro configuraciones: un hueco amplio entre dos coches, una zona con solo los dos vehículos iniciales, un escenario sin coches y un hueco con un coche solo delante. El objetivo de estas pruebas es comprobar tanto la detección del espacio libre como la ejecución de la maniobra y la precisión de la posición final.</p>
+        <p>Las pruebas muestran que el vehículo detecta el espacio libre y ejecuta las fases de entrada y enderezado. La maniobra se completa en el hueco entre coches. En los demás escenarios, la posición final todavía puede pulirse mediante ajustes del punto de entrada y del control.</p>
         <div class="p3-video-grid">
           <section class="p3-video-card" id="video-hueco-grande">
             <div class="p3-video-heading"><span class="p3-tag">Prueba 01</span></div>
@@ -259,8 +259,6 @@ if remaining &lt;= early_straightening and rear_depth &gt;= rear_entry_depth:
             </figure>
             <p class="p3-video-note"></p>
           </section>
-        </div>
-        <div class="p3-final-comparison">
           <section class="p3-video-card" id="video-sin-coches">
             <div class="p3-video-heading"><span class="p3-tag">Prueba 03</span></div>
             <h3>Aparcamiento sin coches</h3>
@@ -274,16 +272,31 @@ if remaining &lt;= early_straightening and rear_depth &gt;= rear_entry_depth:
             </figure>
             <p class="p3-video-note"></p>
           </section>
-        <section class="p3-final-gallery" aria-label="Imágenes finales de las tres pruebas">
+          <section class="p3-video-card" id="video-coche-delantero">
+            <div class="p3-video-heading"><span class="p3-tag">Prueba 04</span></div>
+            <h3>Un coche solo delante</h3>
+            <p>En la zona elegida queda un coche delante del hueco y ninguno detrás. Esta prueba permite comprobar si el sistema mide el espacio libre y realiza la maniobra sin un vehículo que delimite el otro extremo.</p>
+            <figure>
+              <video controls preload="none" playsinline poster="docs/p3/poster-delantero.jpg" width="720" height="814" aria-label="Prueba de aparcamiento con un coche solo delante del hueco">
+                <source src="docs/p3/parking_coche%20delantero.mp4" type="video/mp4">
+                <a href="docs/p3/parking_coche%20delantero.mp4">Descargar el vídeo de la prueba con un coche delante</a>.
+              </video>
+              <figcaption>El coche entra y queda casi paralelo, aunque el registro indica que la posición final sigue fuera de tolerancia.</figcaption>
+            </figure>
+          </section>
+        </div>
+        <section class="p3-final-gallery" aria-label="Posiciones finales de las cuatro pruebas">
           <div class="p3-final-heading">
             <div class="p3-video-heading"><span class="p3-tag">Resumen</span></div>
             <h3>Posiciones finales</h3>
           </div>
-          <figure class="p3-photo"><a href="docs/p3/final-coches.jpg"><img src="docs/p3/portada.jpg" width="720" height="278" loading="lazy" alt="Resultado de la prueba entre coches: el vehículo amarillo queda aparcado entre los dos blancos."></a><figcaption><strong>Prueba 01.</strong> El registro confirma el aparcamiento. Pulsa la imagen para ver el fotograma completo.</figcaption></figure>
-          <figure class="p3-photo"><a href="docs/p3/final-abierto.jpg"><img src="docs/p3/resultado-abierto.jpg" width="720" height="278" loading="lazy" alt="Resultado del escenario abierto: el coche está paralelo junto a la fila, pero no alcanza la tolerancia de posición."></a><figcaption><strong>Prueba 02.</strong> Pulsa para ver el fotograma completo.</figcaption></figure>
-          <figure class="p3-photo p3-result-sin-coches"><a href="docs/p3/final-sin-coches.jpg"><img src="docs/p3/resultado-sin-coches.jpg" width="720" height="278" loading="lazy" alt="Resultado final de la prueba 3 sin coches: el vehículo amarillo queda paralelo al borde de la zona de aparcamiento."></a><figcaption><strong>Prueba 03.</strong> Pulsa la imagen para ver el fotograma completo.</figcaption></figure>
+          <div class="p3-results-grid">
+            <figure class="p3-photo"><a href="docs/p3/final-coches.jpg"><img src="docs/p3/portada.jpg" width="720" height="278" loading="lazy" alt="Resultado de la prueba entre coches: el vehículo amarillo queda aparcado entre los dos blancos."></a><figcaption><strong>Prueba 01.</strong> El registro confirma el aparcamiento. Pulsa la imagen para ver el fotograma completo.</figcaption></figure>
+            <figure class="p3-photo"><a href="docs/p3/final-abierto.jpg"><img src="docs/p3/resultado-abierto.jpg" width="720" height="278" loading="lazy" alt="Resultado del escenario abierto: el coche está paralelo junto a la fila, pero no alcanza la tolerancia de posición."></a><figcaption><strong>Prueba 02.</strong> Pulsa para ver el fotograma completo.</figcaption></figure>
+            <figure class="p3-photo p3-result-sin-coches"><a href="docs/p3/final-sin-coches.jpg"><img src="docs/p3/resultado-sin-coches.jpg" width="720" height="278" loading="lazy" alt="Resultado final de la prueba 3 sin coches: el vehículo amarillo queda paralelo al borde de la zona de aparcamiento."></a><figcaption><strong>Prueba 03.</strong> Pulsa la imagen para ver el fotograma completo.</figcaption></figure>
+            <figure class="p3-photo"><a href="docs/p3/final-delantero.jpg"><img src="docs/p3/resultado-delantero.jpg" width="720" height="278" loading="lazy" alt="El coche amarillo queda detrás de un único coche blanco y casi paralelo al borde de la plaza."></a><figcaption><strong>Prueba 04.</strong> Pulsa la imagen para ver el fotograma completo.</figcaption></figure>
+          </div>
         </section>
-        </div>
         <section id="conclusiones">
           <h3>Conclusiones</h3>
           <ul>
@@ -294,8 +307,9 @@ if remaining &lt;= early_straightening and rear_depth &gt;= rear_entry_depth:
                         Concentrar la maniobra en <code>park()</code> permite modificar sus fases y añadir 
                         la recuperación ante obstáculos sin alterar el alineamiento ni la búsqueda del hueco.</li>
             <li><strong>Las pruebas muestran un funcionamiento bastante satisfactorio, con aspectos que todavía pueden pulirse.</strong> La maniobra se completa en el hueco entre coches y, en los escenarios abiertos, el vehículo consigue entrar y quedar paralelo.
-                        El siguiente ajuste se centra en afinar la posición final y comprobar el comportamiento con distintas 
-                        posiciones iniciales y tamaños más variados de plaza.</li>
+                        El siguiente ajuste se centra en afinar la posición final, sobretodo, cuando el hueco no se encuentra entre dos coches,
+                        como se puede observar en los videos, con menos referencias, la posición final del centro del coche tiene algo de errror respecto
+                        a la posición esperada.</li>
             <li><strong>La búsqueda del hueco y la maniobra pueden realizarse tanto con coches aparcados alrededor como sin ellos.</strong> El sistema necesita al menos un coche de referencia durante la etapa <code>INIT</code> para obtener la línea a la que debe alinearse. Una vez fijada esa referencia, puede buscar espacio libre y ejecutar el aparcamiento sin que otros vehículos delimiten la plaza.</li>
           </ul>
         </section>

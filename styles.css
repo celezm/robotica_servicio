@@ -963,20 +963,17 @@ pre code {
   background: #f9fcfa;
 }
 .autoparking-page .p3-video-grid,
-.autoparking-page .p3-final-comparison {
+.autoparking-page .p3-results-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
-}
-.autoparking-page .p3-final-comparison {
-  margin-top: 1.5rem;
-  align-items: stretch;
 }
 .autoparking-page .p3-final-gallery {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   min-width: 0;
+  margin-top: 1.5rem;
   padding: 1.2rem;
   background: #fff;
   border: 1px solid var(--line);
@@ -991,6 +988,9 @@ pre code {
 }
 .autoparking-page .p3-final-gallery .p3-photo {
   margin: 0;
+}
+.autoparking-page .p3-results-grid {
+  gap: 1.25rem;
 }
 .autoparking-page .p3-video-card {
   display: flex;
@@ -1071,7 +1071,7 @@ pre code {
   .autoparking-page .p3-split,
   .autoparking-page .p3-phase-gallery,
   .autoparking-page .p3-video-grid,
-  .autoparking-page .p3-final-comparison {
+  .autoparking-page .p3-results-grid {
     grid-template-columns: minmax(0, 1fr);
   }
   .autoparking-page .p3-phase-gallery {
