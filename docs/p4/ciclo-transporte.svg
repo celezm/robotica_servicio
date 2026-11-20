@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" role="img" aria-labelledby="title desc">
+<title id="title">Seis etapas de la máquina de estados de transporte</title>
+<desc id="desc">Planificar la ruta de recogida, navegar, levantar la estantería, volver al punto de colocación, soltar la mesa y actualizar el mapa para la siguiente.</desc>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+    <path d="M0 0 10 5 0 10z" fill="#426b80"/>
+  </marker>
+  <filter id="shadow" x="-10%" y="-10%" width="120%" height="135%">
+    <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#173849" flood-opacity="0.10"/>
+  </filter>
+</defs>
+<style>
+text{font-family:Arial,sans-serif;fill:#18384b}
+.card{fill:#fff;stroke:#d5e1e8;stroke-width:1.5;filter:url(#shadow)}
+.number{font-size:16px;font-weight:700;fill:#fff;text-anchor:middle}
+.state{font-family:monospace;font-size:17px;font-weight:700;fill:#486a7c}
+.action{font-size:22px;font-weight:700}
+.detail{font-size:17px;fill:#5e7583}
+.arrow{stroke:#426b80;stroke-width:3.5;fill:none;marker-end:url(#arrow);stroke-linecap:round;stroke-linejoin:round}
+</style>
+<rect width="1200" height="640" rx="24" fill="#f4f8fa"/>
+<g class="card">
+  <rect x="42" y="34" width="350" height="190" rx="18"/>
+  <rect x="425" y="34" width="350" height="190" rx="18"/>
+  <rect x="808" y="34" width="350" height="190" rx="18"/>
+  <rect x="808" y="300" width="350" height="200" rx="18"/>
+  <rect x="425" y="300" width="350" height="200" rx="18"/>
+  <rect x="42" y="300" width="350" height="200" rx="18"/>
+</g>
+<g>
+  <path d="M42 54a20 20 0 0 1 20-20h330v10H42z" fill="#4388a1"/>
+  <path d="M425 54a20 20 0 0 1 20-20h330v10H425z" fill="#48958b"/>
+  <path d="M808 54a20 20 0 0 1 20-20h330v10H808z" fill="#cf9132"/>
+  <path d="M808 320a20 20 0 0 1 20-20h330v10H808z" fill="#527d91"/>
+  <path d="M425 320a20 20 0 0 1 20-20h330v10H425z" fill="#77719b"/>
+  <path d="M42 320a20 20 0 0 1 20-20h330v10H42z" fill="#619078"/>
+</g>
+<g>
+  <circle cx="78" cy="78" r="20" fill="#4388a1"/><text x="78" y="84" class="number">01</text>
+  <circle cx="461" cy="78" r="20" fill="#48958b"/><text x="461" y="84" class="number">02</text>
+  <circle cx="844" cy="78" r="20" fill="#cf9132"/><text x="844" y="84" class="number">03</text>
+  <circle cx="844" cy="344" r="20" fill="#527d91"/><text x="844" y="350" class="number">04</text>
+  <circle cx="461" cy="344" r="20" fill="#77719b"/><text x="461" y="350" class="number">05</text>
+  <circle cx="78" cy="344" r="20" fill="#619078"/><text x="78" y="350" class="number">06</text>
+</g>
+<g class="state">
+  <text x="112" y="84">PLAN_TO_SHELF</text>
+  <text x="495" y="84">TO_SHELF</text>
+  <text x="878" y="84">LIFTING</text>
+  <text x="878" y="350">PLAN_TO_DROP / TO_DROP</text>
+  <text x="495" y="350">LOWERING</text>
+  <text x="112" y="350">EXITING</text>
+</g>
+<g>
+  <text x="66" y="143" class="action">Planificar ruta al punto</text>
+  <text x="66" y="179" class="detail">OMPL calcula la aproximación</text>
+  <text x="449" y="143" class="action">Navegar a la estantería</text>
+  <text x="449" y="179" class="detail">El controlador sigue la ruta</text>
+  <text x="832" y="143" class="action">Levantar la estantería</text>
+  <text x="832" y="179" class="detail">Confirmar y liberar el origen</text>
+  <text x="832" y="407" class="action">Volver al punto de</text>
+  <text x="832" y="435" class="action">colocación</text>
+  <text x="832" y="469" class="detail">Seguir la ruta con la mesa cargada</text>
+  <text x="449" y="413" class="action">Soltar la mesa</text>
+  <text x="449" y="449" class="detail">Confirmar que ha bajado</text>
+  <text x="66" y="413" class="action">Actualizar el mapa</text>
+  <text x="66" y="449" class="detail">Registrar apoyos y continuar</text>
+</g>
+<path d="M397 132h20M780 132h20" class="arrow"/>
+<path d="M983 237v49" class="arrow"/>
+<path d="M800 400h-20M417 400h-20" class="arrow"/>
+<path d="M217 513v52H23V130h13" class="arrow"/>
+</svg>
