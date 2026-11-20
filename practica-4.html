@@ -40,8 +40,9 @@
     <section class="practice-content">
       <article class="content-panel" id="objetivo">
         <h2>Objetivo y resultado de la práctica</h2>
-<p>La práctica consiste en transportar las seis estanterías con un robot autónomo, mediante planificación de caminos con la librería OMPL. El ciclo planifica la aproximación, recoge la estantería, la lleva al destino, la deposita y actualiza el mapa.</p>
-<p>Se han implementado tres fases: planificación puntual con obstáculos inflados, navegación holonómica, y navegación Ackermann con restricciones geométricas. 
+<p>La práctica consiste en transportar las seis estanterías con un robot autónomo, mediante planificación de caminos con la librería OMPL.
+  El ciclo planifica la aproximación, recoge la estantería, la lleva al destino, la deposita y actualiza el mapa.</p>
+<p>Se han implementado tres fases diferentes: planificación puntual con obstáculos inflados, navegación holonómica, y navegación Ackermann con restricciones geométricas. 
 <h3>Organización del código</h3>
 <p>La entrega contiene una carpeta por fase, cada una con su planificador, controlador y el código principal <code>code.py</code>. El fichero <code>register.py</code> es común a las tres y contiene el registro del mapa.</p>
 <pre class="code-block"><code>p4/
@@ -60,18 +61,17 @@
     ├── register.py
     ├── ompl_planner.py
     └── ackermann_controller.py</code></pre>
-<div class="table-wrapper"><table><thead><tr><th>Archivo</th><th>Responsabilidad</th></tr></thead><tbody><tr><td><code>code.py</code></td><td>Máquina de estados, mapa, colisiones, recogida y descarga.</td></tr><tr><td><code>register.py</code></td><td>Conversión entre Gazebo y píxeles.</td></tr><tr><td><code>ompl_planner.py</code></td><td>Planificación y muestreo de rutas.</td></tr><tr><td><code>controller.py</code> o <code>ackermann_controller.py</code></td><td>Seguimiento de la ruta y comandos de velocidad.</td></tr></tbody></table></div>
+<div class="table-wrapper"><table><thead><tr><th>Archivo</th><th>Responsabilidad</th></tr>
+</thead><tbody><tr><td><code>code.py</code></td><td>Máquina de estados, mapa, colisiones, recogida y descarga.</td></tr>
+<tr><td><code>register.py</code></td><td>Conversión entre Gazebo y el mapa.</td></tr><tr><td><code>ompl_planner.py</code></td><td>Planificación de rutas.</td></tr>
+<tr><td><code>controller.py</code> / <code>ackermann_controller.py</code></td><td>Seguimiento de la ruta y comandos de velocidad.</td></tr></tbody></table></div>
 <h3>Máquina de estados</h3>
 <p>El código principal se organiza en una máquina de estados que coordina la planificación, navegación, elevación y descarga de la estanteria y actualización del mapa.
   Cada fase añade "sub-fases" propias para gestionar la entrada, la salida o la recuperación del robot.</p>
+</article>
 
-<figure class="practice-figure p4-explanation p4-state-machine"><a href="docs/p4/ciclo-transporte.svg"><img src="docs/p4/ciclo-transporte.svg" alt="Diagrama de seis etapas de la máquina de estados para recoger, transportar y depositar una estantería." loading="lazy" style="width:100%height:auto"></a><figcaption>Flujo general de estados coordinado por <code>code.py</code>.</figcaption></figure>
-<nav class="section-index" aria-label="Contenido"><a href="#registro-mapa">Registro del mapa</a><a href="#puntual">Fase puntual</a><a href="#holonomico">Fase holonómica</a><a href="#ackermann">Fase Ackermann</a><a href="#comparacion">Comparación</a><a href="#conclusiones">Conclusiones</a></nav>
-      </article>
-
-      <article class="content-panel" id="registro-mapa">
-        <h2>Registro del mapa</h2>
-<p>El mapa se convierte a escala de grises. Los píxeles menores que 240 se consideran ocupados y la resolución usada es 0,05 m por píxel. El registro transforma la pose de Gazebo a filas y columnas de imagen.</p>
+<article class="content-panel" id="registro-mapa">
+  <h2>Registro del mapa</h2>
 <p>Para convertir una pose de Gazebo a píxeles se representa el punto en coordenadas homogéneas <code>[x, y, 1]</code>. La transformación se puede entender como tres operaciones: trasladar el origen, intercambiar e invertir los ejes para ajustarlos a la imagen y escalar de metros a píxeles.</p>
 <pre class="code-block"><code>T = [[1, 0, -6.8], [0, 1, -10.31], [0, 0, 1]]
 Q = [[0, -1, 0], [-1, 0, 0], [0, 0, 1]]
@@ -81,11 +81,11 @@ M_gzb2map = S @ Q @ T</code></pre>
 <pre class="code-block"><code>M_gzb2map = [[0, -20.17, 207.9527],
                     [-20.22, 0, 137.496],
                     [0, 0, 1]]</code><M_gzb2map/pre>
-<p>Al multiplicar esta matriz por <code>[x_gazebo, y_gazebo, 1]</code> se obtienen directamente la columna y la fila del píxel. Los coeficientes y offsets de las ecuaciones salen de ese producto: <code>207.9527 = 20.17 × 10.31</code> y <code>137.496 = 20.22 × 6.8</code>.</p>
 <pre class="code-block"><code>columna = -20.17 * y_gazebo + 207.9527
 fila    = -20.22 * x_gazebo + 137.496</code></pre>
-<p>En <code>register.py</code> esta matriz se define directamente con sus coeficientes, para evitar la multiplicación de matrices. <code>M_map2gzb</code> se calcula con la inversa de la matriz.</p>
+
 </article>
+
 
 <article class="content-panel" id="puntual">
 <h2>Fase 1. Planificación puntual con obstáculos inflados</h2>
@@ -97,47 +97,50 @@ kernel = cv2.getStructuringElement(
     cv2.MORPH_ELLIPSE, (2 * columnas + 1, 2 * filas + 1)
 )
 espacio_libre = cv2.erode(mapa_libre, kernel)</code></pre>
-<p><code>is_valid()</code> consulta la máscara inflada del robot y <code>is_valid_loaded()</code> la de la carga. Se reutilizan hasta que cambia el mapa. Como la orientación no se planifica, la huella cargada no modela el barrido al girar.</p>
-<p>RRT* planifica en XY y completa las seis tareas. El controlador gira parado para alinearse y después avanza. Las velocidades máximas son 0,22 m/s vacío y 0,14 m/s cargado el frenado por proximidad se aplica al destino final.</p>
-<p>Al recoger se despeja el origen. Tras depositar se añaden cuatro apoyos rectangulares desde la pose medida al bajar. El mapa visible usa la inflación del robot vacío y la validación cargada conserva la huella de la mesa.</p>
+<p><code>is_valid()</code> comprueba si el robot puede pasar por esa posición y <code>is_valid_loaded()</code> el robot ya cargado.</p>
+<p>RRT* planifica en XY y completa las seis tareas. El controlador gira primero para alinearse
+  y después avanza. Las velocidades máximas son 0,22 m/s vacío y 0,14 m/s con la estantería encima, cuando se 
+  está acercando al punto de destino, se reduce también la velocidad.</p>
+<p>Al recoger la estantería, se elimina del mapa. Tras depositarla de nuevo se añaden cuatro
+  apoyos rectangulares desde la pose medida al bajar.</p>
 
-      <figure class="practice-figure p4-explanation"><a href="docs/p4/captura-puntual.jpg"><img src="docs/p4/captura-puntual.jpg" alt="Captura de la fase puntual: se aprecia la ampliación de obstáculos y el transporte de mesas." loading="lazy" style="width:100%height:auto"></a><figcaption>Captura de la fase puntual: se aprecia la ampliación de obstáculos y el transporte de mesas. Pulsa la imagen para verla ampliada.</figcaption></figure>
+      <figure class="practice-figure p4-explanation"><a href="docs/p4/captura-puntual.jpg"><img src="docs/p4/captura-puntual.jpg" alt="Captura de la fase puntual: se aprecia la ampliación de obstáculos y el transporte de mesas." loading="lazy" style="width:100%height:auto"></a></figure>
 </article>
 
       <article class="content-panel" id="holonomico">
         <h2>Fase 2. Navegación holonómica</h2>
-<p>La fase holonómica deja el mapa sin inflación y valida directamente una huella cuadrada de 0,30 × 0,30 m en la ida y una rectangular de 2,0 × 0,82 m en la vuelta, ambas con margen de 0,03 m. La huella se mantiene alineada con el mapa, por lo que no contempla la rotación de la carga.</p>
-<p>El controlador corrige orientación girando parado si el error supera 0,18 rad y ajusta el rumbo mientras avanza. Al destino, alinea la orientación por separado. La ruta se muestrea en 50 puntos y las velocidades máximas son 0,15 m/s vacío y 0,10 m/s cargado.</p>
+<p>En la fase holonómica se utiliza el mapa sin inflación y la función is_valid() comprueba 
+  directamente una huella cuadrada de 0,30 × 0,30 m en la ida (el tamaño del robot) y una 
+  rectangular de 2,0 × 0,82 m en la vuelta (el robot + la estantería), ambas con margen de
+  0,03 m de seguridad.</p>
 <p>La ruta se muestrea en 50 puntos. Los máximos de velocidad conservados son 0,15 m/s sin carga y 0,10 m/s con carga. El programa comprueba un pequeño horizonte de movimiento antes de enviar las velocidades con <code>HAL.setV()</code> y <code>HAL.setW()</code>. Ante una trayectoria rechazada, puede volver a planificar con un límite de intentos.</p>
-<p>Para recoger, se libera el tablero pero se conservan sus patas. Tras confirmar la elevación, el robot retrocede 1,5 m, lleva la estantería al offset habitual de −3 m y avanza 1,6 m después de depositarla.</p>
-<p>Los apoyos depositados se calculan desde el objetivo de descarga. Las fases puntual y Ackermann los sitúan desde la pose medida al bajar.</p>
 
-      <figure class="practice-figure p4-explanation"><a href="docs/p4/captura-holonomico.jpg"><img src="docs/p4/captura-holonomico.jpg" alt="Captura de la fase holonómica durante la recogida y actualización del mapa." loading="lazy" style="width:100%height:auto"></a><figcaption>Captura de la fase holonómica durante la recogida y actualización del mapa. Pulsa la imagen para verla ampliada.</figcaption></figure>
-<figure class="practice-figure p4-explanation"><a href="docs/p4/captura-holonomico-huella.jpg"><img src="docs/p4/captura-holonomico-huella.jpg" alt="Robot holonómico llevando una estantería mientras sigue una ruta de regreso." loading="lazy" style="width:100%height:auto"></a><figcaption>Captura del vídeo holonómico (00:48): al volver cargado se valida la región rectangular de la estantería, con el mapa base sin inflación global.</figcaption></figure>
+<figure class="practice-figure p4-explanation"><a href="docs/p4/captura-holonomico.jpg"><img src="docs/p4/captura-holonomico.jpg" alt="Captura de la fase holonómica durante la recogida y actualización del mapa." loading="lazy" style="width:100%height:auto"></a></figure>
+
 </article>
 
-      <article class="content-panel" id="ackermann">
-        <h2>Fase 3. Planificación y seguimiento Ackermann</h2>
-<p>Ackermann usa inflación base de 0,01 m, que con resolución de 0,05 m equivale a un píxel. Además comprueba la huella orientada del robot (1,152 × 0,5128 m) o de la carga, con margen de 0,01 m. El estado planificado es <code>(x, y, yaw)</code>.</p>
-<p>El radio teórico se calcula con batalla de 0,488 m y dirección máxima de 0,64 rad, dando unos 0,655 m. Como el robot real trazaba curvas más amplias, se incrementó un 15 %, hasta 0,754 m, para planificar arcos más conservadores.</p>
+<article class="content-panel" id="ackermann">
+<h2>Fase 3. Navegación Ackermann</h2>
+<p>En esta fase se utiliza una inflación del mapa de 0,01 m. Además comprueba la huella orientada del robot o de la carga, con margen de 0,01 m. Ahora sí se tiene en cuenta la orientación, el estado planificado es <code>(x, y, yaw)</code>.</p>
+<p>El radio mínimo de giro depende de la distancia entre ejes, 0,488 m, y del ángulo máximo de dirección, 0,64 rad (estimado). Sin embargo, el robot no lograba seguir ciertas curvas, por ello, aumenté el radio un 15 %.</p>
 <pre class="code-block"><code>radio_minimo = 0.488 / tan(0.64) * 1.15
 curvatura_maxima = 1 / radio_minimo
 velocidad_angular = velocidad_lineal * curvatura</code></pre>
-<h3>Búsqueda de rutas con restricciones</h3>
-<p>La planificación usa curvas <strong>Dubins</strong>: prueba primero una conexión directa y valida la huella cada centímetro si colisiona, recurre a RRT en espacio Dubins. También evalúa la orientación invertida para permitir marcha atrás.</p>
-<figure class="practice-figure p4-explanation"><a href="docs/p4/captura-dubins.jpg"><img src="docs/p4/captura-dubins.jpg" alt="Captura del vídeo Ackermann durante la planificación y ejecución de una ruta con curvas limitadas." loading="lazy" style="width:100%height:auto"></a><figcaption>Captura del vídeo Ackermann (02:00): la ruta debe enlazar rectas y arcos que respeten el radio mínimo de giro.</figcaption></figure>
-<p>Se priorizan rutas cortas y se penalizan giros acumulados superiores a 315° para reducir vueltas completas. Se prueban retrocesos de 0,45 y 0,85 m, y solo se aceptan soluciones exactas de OMPL.</p>
-<p>En pasillos estrechos se prueban extensiones RRT de 0,60 y 0,25 m. Para la última mesa hay una alternativa que alinea la llegada fuera de las patas y continúa recto hasta el centro en una sola ruta.</p>
+<h3>Búsqueda de rutas con restricciones geométricas</h3>
+<p>Se utilizan curvas de Dubins, formadas por tramos rectos y arcos de radio limitado. Representan los giros que puede realizar un vehículo Ackermann, que no puede girar sobre sí mismo. Primero se intenta conectar directamente el inicio y el destino, comprobando la ruta cada centímetro. Si hay colisión, RRT busca otra ruta. También se planifica con la orientación invertida para permitir tramos marcha atrás.</p>
+<figure class="practice-figure p4-explanation"><a href="docs/p4/captura-dubins.jpg"><img src="docs/p4/captura-dubins.jpg" alt="Captura del vídeo Ackermann durante la planificación y ejecución de una ruta con curvas limitadas." loading="lazy" style="width:100%height:auto"></a></figure>
+<p>Para escoger entre las rutas válidas, se calcula una puntuación: se suma la distancia y el giro acumulado. Si los giros superan 315°, se añade una penalización mayor (de 25 pts). Las rutas hechas enteramente marcha atrás reciben una penalización del 5 %, y cada cambio de sentido suma 0,20. Se elige la ruta con menor puntuación, siempre que llegue al objetivo. También se prueban retrocesos de 0,45 y 0,85 m.</p>
+<p>Si el pasillo es estrecho, vuelvo a probar RRT con puntos de paso más cercanos, de 0,60 y 0,25 m. Para la última mesa, el robot se alinea delabnte de la estantería y sigue hasta el centro de la misma.</p>
 <h3>Seguimiento y cambios de sentido</h3>
-<p><strong>Pure Pursuit</strong> sigue un punto adelantado de la ruta —el <code>carrot</code> de las trazas— y calcula la curvatura necesaria, limitada por el radio mínimo. Cerca del destino se ajusta la pose con movimientos cortos.</p>
-<p>Para evitar saltos entre vueltas, el seguimiento busca el punto de ruta en una ventana local. En cada cambio entre avance y retroceso se detiene un ciclo y reinicia el tramo. Las velocidades máximas son 0,14 m/s vacío y 0,08 m/s cargado.</p>
-<figure class="practice-figure p4-explanation"><a href="docs/p4/captura-pure-pursuit.jpg"><img src="docs/p4/captura-pure-pursuit.jpg" alt="Captura del seguimiento Ackermann con el robot siguiendo una trayectoria y las trazas de error y curvatura." loading="lazy" style="width:100%height:auto"></a><figcaption>Captura del vídeo Ackermann (05:00): Pure Pursuit sigue el tramo activo y muestra en consola el error respecto al objetivo y la curvatura de mando.</figcaption></figure>
+<p><strong>Pure Pursuit</strong> es un controlador geométrico de seguimiento de trayectoria. En cada instante elige un punto adelantado de la ruta, llamado "carrot" y calcula la curvatura necesaria para alcanzarlo. El giro se limita para respetar el radio mínimo del Ackermann. Cerca del destino corrige la posición con movimientos cortos.</p>
+<p>En las pruebas, a veces el robot saltaba a otra vuelta cercana de la ruta. Limité la búsqueda al tramo que está siguiendo. Cuando cambia entre avance y marcha atrás, se detiene un ciclo y continúa desde ese punto. Las velocidades máximas son 0,14 m/s vacío y 0,08 m/s con mesa.</p>
+<figure class="practice-figure p4-explanation"><a href="docs/p4/captura-pure-pursuit.jpg"><img src="docs/p4/captura-pure-pursuit.jpg" alt="Captura del seguimiento Ackermann con el robot siguiendo una trayectoria y las trazas de error y curvatura." loading="lazy" style="width:100%height:auto"></a></figure>
 <h3>Orden de recogida y mapa de las descargas</h3>
-<p>El orden de recogida es <strong>1 → 2 → 3 → 4 → 6 → 5</strong> para dejar más espacio al final. Los offsets longitudinales son −3 m para las cuatro primeras, −2,8 m para la sexta física y −3,3 m para la quinta.</p>
-<p>La salida es de 1,95 m: marcha atrás en las cuatro primeras mesas y hacia delante en las dos últimas. Al bajar se registran cuatro apoyos de 18 × 10 cm desde la pose medida, dejando libre el espacio bajo el tablero.</p>
-<p>Al recoger se limpia el contorno y la inflación de las patas. La recuperación prueba retrocesos concretos y permite replanificar desde una pose libre, con intentos limitados.</p>
+<p>Para esta fase, modifique el orden de recogida de estanterías a: <strong>1 → 2 → 3 → 4 → 6 → 5</strong>, para dejar más espacio al final.</p>
+<p>Después de soltar cada estantería, el robot se aleja 1,95 m, para salide de debajo de ella. Sale marcha atrás de las cuatro primeras y hacia delante de las dos últimas. Al bajarla, añade cuatro apoyos de 18 × 10 cm al mapa, usando la posición medida y dejando libre el espacio bajo la mesa.</p>
+<p>Al recoger, se borran del mapa las patas. La recuperación prueba retrocesos cortos. Si no funcionan y el robot está en una zona libre, vuelve a planificar desde su posición, con un límite de intentos.</p>
 
-      <figure class="practice-figure p4-explanation"><a href="docs/p4/captura-ackermann.jpg"><img src="docs/p4/captura-ackermann.jpg" alt="Captura de Ackermann durante una descarga, con las trayectorias y mesas ya transportadas." loading="lazy" style="width:100%height:auto"></a><figcaption>Captura de Ackermann durante una descarga, con las trayectorias y mesas ya transportadas. Pulsa la imagen para verla ampliada.</figcaption></figure>
+<figure class="practice-figure p4-explanation"><a href="docs/p4/captura-ackermann.jpg"><img src="docs/p4/captura-ackermann.jpg" alt="Captura de Ackermann durante una descarga, con las trayectorias y mesas ya transportadas." loading="lazy" style="width:100%height:auto"></a></figure>
 </article>
 
       <article class="content-panel" id="comparacion">
@@ -145,36 +148,35 @@ velocidad_angular = velocidad_lineal * curvatura</code></pre>
 <div class="table-wrapper">
 <table>
   <thead>
-    <tr><th>Aspecto</th><th>Fase 1 · Puntual</th><th>Fase 2 · Holonómica</th><th>Fase 3 · Ackermann</th></tr>
+    <tr><th>Aspecto</th><th>Fase 1 - Puntual</th><th>Fase 2 - Holonómica</th><th>Fase 3 - Ackermann</th></tr>
   </thead>
   <tbody>
-    <tr><th scope="row">Estado planificado</th><td>Posición <code>(x, y)</code></td><td>Posición <code>(x, y)</code></td><td>Pose <code>(x, y, yaw)</code></td></tr>
-    <tr><th scope="row">Modelo del robot</th><td>Cuadrado holonómico</td><td>Cuadrado de 0,30 × 0,30 m</td><td>Rectangular, 1,152 × 0,5128 m, con dirección Ackermann</td></tr>
-    <tr><th scope="row">Mapa y colisiones</th><td>Erosión elíptica del espacio libre, equivalente a engordar obstáculos para el robot punto</td><td>Mapa sin inflación global. Consulta directa de huella cuadrada vacío o rectangular cargado</td><td>Inflación base de 0,01 m discretizada a 1 píxel, más huella orientada del vehículo o de la carga</td></tr>
+    <tr><th scope="row">Estado planificado</th><td>Posición <code>(x, y)</code></td><td>Pose <code>(x, y)</code></td><td>Pose + orientac<code>(x, y, yaw)</code></td></tr>
+    <tr><th scope="row">Modelo del robot</th><td>Punto</td><td>Cuadrado</td><td>Rectangular, 1,152 × 0,5128 m</td></tr>
+    <tr><th scope="row">Mapa y colisiones</th><td>Erosión elíptica</td><td>Mapa sin inflación global.</td><td>Inflación de 0,01 m</td></tr>
     <tr><th scope="row">Planificación OMPL</th><td>RRT* en espacio XY</td><td>RRT* en espacio XY</td><td>Conexión directa Dubins y, si colisiona, RRT en espacio Dubins. Se evalúan avance y marcha atrás</td></tr>
-    <tr><th scope="row">Seguimiento reactivo</th><td>Avanza entre puntos y gira sobre el sitio para corregir rumbo</td><td>Avanza entre puntos, gira parado y ajusta la orientación al final</td><td>Pure Pursuit con límite de curvatura, búsqueda local del punto de ruta y ajuste final de pose</td></tr>
+    <tr><th scope="row">Seguimiento reactivo</th><td>Avanza entre puntos y gira sobre el sitio para corregir rumbo</td><td>Avanza entre puntos, gira parado y ajusta la orientación al final</td><td>Pure Pursuit con límite de curva, búsqueda local del punto de ruta y ajuste final de pose</td></tr>
     <tr><th scope="row">Velocidad máxima</th><td>0,22 m/s vacío · 0,14 m/s cargado</td><td>0,15 m/s vacío · 0,10 m/s cargado</td><td>0,14 m/s vacío · 0,08 m/s cargado</td></tr>
     <tr><th scope="row">Actualización del mapa</th><td>Elimina el origen al levantar y marca cuatro apoyos al depositar</td><td>Libera el origen y conserva los apoyos de la mesa depositada</td><td>Libera el origen y añade cuatro apoyos desde la pose medida al bajar</td></tr>
     <tr><th scope="row">Reto principal</th><td>Elegir una inflación que deje paso sin acercar demasiado el robot a obstáculos</td><td>Usar la geometría correcta según vaya vacío o con la mesa</td><td>Respetar el radio de giro, la orientación y el espacio para maniobrar marcha atrás</td></tr>
   </tbody>
 </table>
 </div>
-<figure class="practice-figure p4-explanation"><a href="docs/p4/inflacion-huella.svg"><img src="docs/p4/inflacion-huella.svg" alt="Comparación de la inflación y la comprobación de huella en las tres fases." loading="lazy" style="width:100%height:auto"></a><figcaption>Huellas e imágenes de los robots holonómico y Ackermann. Modelos tomados de la <a href="https://jderobot.github.io/RoboticsAcademy/exercises/MobileRobots/amazon_warehouse/" target="_blank" rel="noopener noreferrer">documentación oficial de JdeRobot</a>.</figcaption></figure>
-      </article>
+</article>
 
-      <article class="content-panel" id="conclusiones">
-        <h2>Resultados: vídeos finales</h2>
+<article class="content-panel" id="conclusiones">
+<h2>Resultados: vídeos finales</h2>
 
 <p>Las siguientes grabaciones muestran los resultados de las ejecuciones finales de la práctica.</p>
 <div class="p4-video-grid">
-<div class="p4-video-card"><h4>Fase 1 · Puntual</h4><figure class="practice-figure"><video poster="docs/p4/captura-puntual.jpg" controls preload="metadata" style="width:100%height:auto" aria-label="Ejecución de la fase puntual: mapa inflado y transporte de las seis mesas."><source src="docs/p4/p4_puntual.mp4" type="video/mp4">Tu navegador no permite reproducir este vídeo. <a href="docs/p4/p4_puntual.mp4">Abrir vídeo</a>.</video><figcaption>Fase puntual: video en x10.</figcaption></figure></div>
-<div class="p4-video-card"><h4>Fase 2 · Holonómica</h4><figure class="practice-figure"><video poster="docs/p4/captura-holonomico.jpg" controls preload="metadata" style="width:100%height:auto" aria-label="Ejecución final de la fase holonómica."><source src="docs/p4/p4_holomic_finished.mp4" type="video/mp4">Tu navegador no permite reproducir este vídeo. <a href="docs/p4/p4_holomic_finished.mp4">Abrir vídeo</a>.</video><figcaption>Fase holonómica: video en x16.</figcaption></figure></div>
-<div class="p4-video-card"><h4>Fase 3 · Ackermann</h4><figure class="practice-figure"><video poster="docs/p4/captura-ackermann.jpg" controls preload="metadata" style="width:100%height:auto" aria-label="Ejecución de la fase Ackermann con restricciones geométricas."><source src="docs/p4/p4_ackermann.mp4" type="video/mp4">Tu navegador no permite reproducir este vídeo. <a href="docs/p4/p4_ackermann.mp4">Abrir vídeo</a>.</video><figcaption>Fase ackermann: video en x16.</figcaption></figure></div>
+<div class="p4-video-card"><h4>Fase 1 - Puntual</h4><figure class="practice-figure"><video poster="docs/p4/captura-puntual.jpg" controls preload="metadata" style="width:100%height:auto" aria-label="Ejecución de la fase puntual: mapa inflado y transporte de las seis mesas."><source src="docs/p4/p4_puntual.mp4" type="video/mp4">Tu navegador no permite reproducir este vídeo. <a href="docs/p4/p4_puntual.mp4">Abrir vídeo</a>.</video><figcaption>Fase puntual: video en x10.</figcaption></figure></div>
+<div class="p4-video-card"><h4>Fase 2 - Holonómica</h4><figure class="practice-figure"><video poster="docs/p4/captura-holonomico.jpg" controls preload="metadata" style="width:100%height:auto" aria-label="Ejecución final de la fase holonómica."><source src="docs/p4/p4_holomic_finished.mp4" type="video/mp4">Tu navegador no permite reproducir este vídeo. <a href="docs/p4/p4_holomic_finished.mp4">Abrir vídeo</a>.</video><figcaption>Fase holonómica: video en x16.</figcaption></figure></div>
+<div class="p4-video-card"><h4>Fase 3 - Ackermann</h4><figure class="practice-figure"><video poster="docs/p4/captura-ackermann.jpg" controls preload="metadata" style="width:100%height:auto" aria-label="Ejecución de la fase Ackermann con restricciones geométricas."><source src="docs/p4/p4_ackermann.mp4" type="video/mp4">Tu navegador no permite reproducir este vídeo. <a href="docs/p4/p4_ackermann.mp4">Abrir vídeo</a>.</video><figcaption>Fase ackermann: video en x16.</figcaption></figure></div>
 </div>
 <h3>Conclusiones</h3>
 
 <p>Las tres fases completan el transporte de las seis estanterías y muestran el aumento de complejidad: inflación para el robot puntual, huellas diferentes para el holonómico y restricciones de giro para Ackermann.</p>
-<p>Los ajustes clave fueron el registro mapa–Gazebo, la actualización de obstáculos y patas, y el seguimiento de los cambios de marcha. En espacios estrechos también importó el orden de recogida y descarga.</p>
+<p>Los ajustes clave fueron el registro mapa–Gazebo, la actualización de obstáculos y patas, y el seguimiento de los cambios de marcha. En espacios estrechos también importó el orden de recogida y descarga, como por ejemplo en la fase Ackermann.</p>
 <p>Los vídeos muestran las ejecuciones finales. Las rutas pueden variar porque RRT es probabilístico. Como mejoras quedan medir el radio de giro con más precisión y reducir rodeos y tiempos de búsqueda manteniendo la seguridad.</p>
 <div class="practice-nav"><a class="button secondary" href="practica-3.html">Práctica anterior</a><a class="button" href="practica-5.html">Siguiente práctica</a></div>
       </article>
